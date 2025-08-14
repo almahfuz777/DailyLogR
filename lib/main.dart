@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/screens/home_screen.dart';
+import 'models/journal_entry.dart';
 
-void main() {
+void main() async{
+  // Hive initialization
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(JournalEntryAdapter());
+  await Hive.openBox<JournalEntry>('journal_entries');
+
+  // Run the app
   runApp(const MyApp());
 }
 
