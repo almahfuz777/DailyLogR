@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+// import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/screens/home_screen.dart';
-import 'models/journal_entry.dart';
+// import 'models/journal_entry.dart';
+import 'services/hive_service.dart';
 
-void main() async{
+void main() async {
   // Hive initialization
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  Hive.registerAdapter(JournalEntryAdapter());
-  await Hive.openBox<JournalEntry>('journal_entries');
+  // await Hive.initFlutter();
+  // // Register Hive Adapters (for custom types)
+  // Hive.registerAdapter(JournalEntryAdapter());
+  // await Hive.openBox<JournalEntry>('journal_entries');
+
+  await HiveService.init();
 
   // Run the app
   runApp(const MyApp());
