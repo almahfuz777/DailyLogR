@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:dailylogr/models/journal_entry.dart';
+import 'package:dailylogr/services/hive_service.dart';
+import 'package:dailylogr/widgets/entry_editor.dart';
+import 'package:dailylogr/widgets/entry_list.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,6 +15,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme;
+
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
 
@@ -18,33 +24,55 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text('DailyLogR'),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        backgroundColor: color.primary,
+        foregroundColor: color.onPrimary,
       ),
 
       drawer: Drawer(
         child: ListView(
           children: [
-            DrawerHeader(child: Text('DailyLogR')),
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: color.primary,
+              ),
+              child: Text(
+                'DailyLogR',
+                style: TextStyle(
+                  color: color.onPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             ListTile(
+              leading: const Icon(Icons.close),
               title: const Text("close"),
               onTap: () => Navigator.pop(context),  // closes the drawer
-            )
+            ),
+
           ],
         ),
       ),
 
+      // FAB to add new entry 
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        onPressed: () async {
+          final created = await showModalBottomSheet<JournalEntry>(
+            context: context,
+            isScrollControlled: true, 
+            builder: (_) => EntryEditor(),        // returns a JournalEntry or null
+          );
+          if(created != null) {
+            await HiveService.addEntry(created);  // upsert by date
+          }
+        },
+        backgroundColor: color.primary,
+        foregroundColor: color.onPrimary,
         child: Icon(Icons.add),
       ),
 
-      body: Center(
-        child: Text('abcde', style: const TextStyle(fontSize: 32)),
-      ),
-
+      body: const EntryList(),  // list of entries
+      
     );
   }
 }
