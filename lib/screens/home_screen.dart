@@ -60,7 +60,14 @@ class _HomeScreenState extends State<HomeScreen> {
           final created = await showModalBottomSheet<JournalEntry>(
             context: context,
             isScrollControlled: true, 
-            builder: (_) => EntryEditor(),        // returns a JournalEntry or null
+            useSafeArea: true,
+            backgroundColor: Colors.transparent,
+            builder: (_) {
+              return Scaffold(
+                backgroundColor: Colors.white,
+                body: EntryEditor(),
+              );
+            } 
           );
           if(created != null) {
             await HiveService.addEntry(created);  // upsert by date

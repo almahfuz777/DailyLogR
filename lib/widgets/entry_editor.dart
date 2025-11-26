@@ -46,13 +46,22 @@ class _EntryEditorState extends State<EntryEditor> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final today = DateTime.now();
+    final firstAllowed = today.subtract(const Duration(days: 4)); // today+last 3 days
+    final lastAllowed  = today;                                   // today
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
+      initialDate: _date.isBefore(firstAllowed) || _date.isAfter(lastAllowed) ? today : _date,
+      firstDate: firstAllowed,
+      lastDate: lastAllowed,
+
+      selectableDayPredicate: (day){
+        final d = DayKey.normalize(day);
+        return !d.isBefore(firstAllowed) && !d.isAfter(lastAllowed);
+      }
     );
+
     if (picked != null) {
       setState(() => _date = DayKey.normalize(picked));
     }
@@ -62,7 +71,11 @@ class _EntryEditorState extends State<EntryEditor> {
     final note = _noteCtrl.text.trim();
     if (note.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Note can’t be empty')),
+        const SnackBar(
+          content: Text('Note can’t be empty'),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(12),
+        )
       );
       return;
     }
@@ -75,7 +88,11 @@ class _EntryEditorState extends State<EntryEditor> {
       // Creating a new entry: block if key exists
       if (box.containsKey(newKey)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An entry already exists for $newKey')),
+          SnackBar(
+            content: Text('An entry already exists for $newKey'),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(12),
+          ),
         );
         return;
       }
@@ -85,7 +102,11 @@ class _EntryEditorState extends State<EntryEditor> {
       final changingDateToAnotherDay = newKey != originalKey;
       if (changingDateToAnotherDay && box.containsKey(newKey)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An entry already exists for $newKey')),
+          SnackBar(
+            content: Text('An entry already exists for $newKey'),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.all(12),
+          ),
         );
         return;
       }
