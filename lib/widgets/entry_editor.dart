@@ -1,4 +1,5 @@
 // lib/widgets/entry_editor.dart
+import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/services/hive_service.dart'; 
@@ -30,7 +31,7 @@ class _EntryEditorState extends State<EntryEditor> {
   void initState() {
     super.initState();
     final e = widget.initial;
-    _date = _normalizeDate(e?.date ?? DateTime.now());
+    _date = DayKey.normalize(e?.date ?? DateTime.now());
     _titleCtrl.text = e?.title ?? '';
     _noteCtrl.text = e?.note ?? '';
     _adjective = e?.adjective;
@@ -44,11 +45,6 @@ class _EntryEditorState extends State<EntryEditor> {
     super.dispose();
   }
 
-  // normalize to yyyy-mm-dd (strip time)
-  DateTime _normalizeDate(DateTime d) => DateTime(d.year, d.month, d.day);
-  String _dayKey(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -58,7 +54,7 @@ class _EntryEditorState extends State<EntryEditor> {
       lastDate: DateTime(now.year + 5),
     );
     if (picked != null) {
-      setState(() => _date = _normalizeDate(picked));
+      setState(() => _date = DayKey.normalize(picked));
     }
   }
 
@@ -73,7 +69,7 @@ class _EntryEditorState extends State<EntryEditor> {
 
     // Duplicate-by-date guard
     final box = HiveService.journalBox;
-    final newKey = _dayKey(_date);
+    final newKey = DayKey.of(_date);
 
     if (widget.initial == null) {
       // Creating a new entry: block if key exists
@@ -85,7 +81,7 @@ class _EntryEditorState extends State<EntryEditor> {
       }
     } else {
       // Editing: allow same date, but block if changing to an occupied date
-      final originalKey = _dayKey(_normalizeDate(widget.initial!.date));
+      final originalKey = DayKey.of(DayKey.normalize(widget.initial!.date));
       final changingDateToAnotherDay = newKey != originalKey;
       if (changingDateToAnotherDay && box.containsKey(newKey)) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,6 +92,8 @@ class _EntryEditorState extends State<EntryEditor> {
     }
 
     final entry = JournalEntry(
+      id: widget.initial?.id ??
+        DateTime.now().microsecondsSinceEpoch.toString(),
       date: _date,
       title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
       note: note,
@@ -137,7 +135,7 @@ class _EntryEditorState extends State<EntryEditor> {
             Row(
               children: [
                 Text(
-                  '${_date.year}-${_date.month.toString().padLeft(2, '0')}-${_date.day.toString().padLeft(2, '0')}',
+                  DayKey.of(_date),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 8),
@@ -177,9 +175,7 @@ class _EntryEditorState extends State<EntryEditor> {
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 360;
 
-                final adjectiveField = Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
+                final adjectiveField = DropdownButtonFormField<String>(
                     isExpanded: true,
                     value: _adjective != null && _adjectives.contains(_adjective) ? _adjective : null,
                     items: _adjectives
@@ -194,12 +190,10 @@ class _EntryEditorState extends State<EntryEditor> {
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
-                  ),
+
                 );
 
-                final ratingField = Expanded(
-                  flex: 2,
-                  child: InputDecorator(
+                final ratingField = InputDecorator(
                     decoration: const InputDecoration(
                       labelText: 'Rating',
                       border: OutlineInputBorder(),
@@ -217,7 +211,7 @@ class _EntryEditorState extends State<EntryEditor> {
                         );
                       }),
                     ),
-                  ),
+
                 );
 
                 if (isNarrow) {
@@ -231,9 +225,9 @@ class _EntryEditorState extends State<EntryEditor> {
                 } else {
                   return Row(
                     children: [
-                      adjectiveField,
+                      Expanded(child: adjectiveField),
                       const SizedBox(width: 12),
-                      ratingField,
+                      Expanded(child: ratingField),
                     ],
                   );
                 }
