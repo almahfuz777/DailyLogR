@@ -1,3 +1,4 @@
+// lib/services/hive_service.dart
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/utils/date_helper.dart';
@@ -32,29 +33,30 @@ class HiveService {
     await _box().put(key, toStore);
   }
 
-  // /// Read (by date)
-  // static JournalEntry? getEntryByDate(DateTime date) {
-  //   final key = _dayKey(date);
-  //   return _box().get(key);
-  // }
+  // Update (existing entry)
+  static Future<void> updateEntry(JournalEntry oldEntry, JournalEntry newEntry) async {
+    final box = _box();
 
-  // /// Read all
-  // static List<JournalEntry> getAllEntries() {
-  //   return _box().values.toList();
-  // }
+    final normalizedNewDate = DayKey.normalize(newEntry.date);
+    final oldKey = DayKey.of(DayKey.normalize(oldEntry.date));
+    final newKey = DayKey.of(normalizedNewDate);
 
-  // /// Update (just re-put with same key)
-  // static Future<void> updateEntry(JournalEntry entry) async {
-  //   final key = _dayKey(entry.date);
-  //   entry.updatedAt = DateTime.now(); // refresh timestamp
-  //   await _box().put(key, entry);
-  // }
+    final toStore = newEntry.copyWith(
+      date: normalizedNewDate,
+      updatedAt: DateTime.now(),
+    );
 
-  // /// Delete (by date)
-  // static Future<void> deleteEntryByDate(DateTime date) async {
-  //   final key = _dayKey(date);
-  //   await _box().delete(key);
-  // }
+    if (oldKey != newKey) {
+      await box.delete(oldKey);
+    }
+    await box.put(newKey, toStore);
+  }
+
+  // Delete (by date)
+  static Future<void> deleteEntry(JournalEntry entry) async {
+    final key = DayKey.of(DayKey.normalize(entry.date));
+    await _box().delete(key);
+  }
 
   // ---------- Helper ----------
 

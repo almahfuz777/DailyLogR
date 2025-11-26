@@ -1,4 +1,7 @@
 // lib/widgets/entry_list.dart
+import 'package:dailylogr/utils/date_helper.dart';
+import 'package:dailylogr/widgets/entry_detail_sheet.dart';
+import 'package:dailylogr/widgets/entry_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/models/journal_entry.dart';
@@ -6,15 +9,14 @@ import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/widgets/empty_state.dart';
 import 'package:dailylogr/widgets/entry_tile.dart';
 
-
 class EntryList extends StatelessWidget {
   const EntryList({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
+    return ValueListenableBuilder<Box<JournalEntry>>(
         valueListenable: HiveService.journalBox.listenable(),
-        builder: (context, Box<JournalEntry> box, _){
+        builder: (context, box, _){
           final entries = box.values.toList()..sort((a,b) => b.date.compareTo(a.date));
 
           if(entries.isEmpty){
@@ -24,13 +26,77 @@ class EntryList extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: entries.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (_, i) {
+            separatorBuilder: (context, _) => const SizedBox(height: 8),
+            itemBuilder: (context, i) {
               final e = entries[i];
-              return EntryTile(entry: e);
-            },
-          );
-        },
+
+              return EntryTile(
+                key: ValueKey(DayKey.of(DayKey.normalize(e.date))),
+                entry: e,
+                onTap: () async {
+                // Show detail sheet
+                final action = await showModalBottomSheet<String>(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => EntryDetailSheet(entry: e),
+                );
+
+                if (!context.mounted) return;
+
+                // Handle edit action
+                if (action == 'edit') {
+                  final updated = await showModalBottomSheet<JournalEntry>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) {
+                      return Scaffold(
+                        backgroundColor: Colors.white,
+                        body: EntryEditor(initial: e),
+                      );
+                    },
+                  );
+
+                  if (!context.mounted) return;
+
+                  if (updated != null) {
+                    await HiveService.updateEntry(e, updated);
+                  }
+                } 
+                
+                // Handle delete action 
+                else if (action == 'delete') {
+                  final key = DayKey.of(DayKey.normalize(e.date));
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Delete entry?'),
+                      content: Text('Delete $key?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (!context.mounted) return;
+
+                  if (confirm == true) {
+                      await HiveService.deleteEntry(e);
+                  }
+                }
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

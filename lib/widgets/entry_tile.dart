@@ -1,25 +1,22 @@
 // lib/widgets/entry_tile.dart
+import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 
 class EntryTile extends StatelessWidget {
   final JournalEntry entry;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
   const EntryTile({
     super.key,
     required this.entry,
-    this.onEdit,
-    this.onDelete,
+    this.onTap,
   });
-
-  // helper method to format date as yyyy-MM-dd
-  String _dayKey(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     final hasTitle = entry.title?.trim().isNotEmpty ?? false;
     final mood = entry.adjective;
     final rating = entry.rating;
@@ -34,15 +31,18 @@ class EntryTile extends StatelessWidget {
     }
 
     return ListTile(
+      onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: Colors.white,
+      tileColor: theme.cardColor,
 
       // Always show the date as the title
       title: Text(
-        _dayKey(entry.date),
+        DayKey.of(entry.date),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontWeight: FontWeight.w600),
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        )
       ),
 
       // Subtitle: title/note snippet + mood/rating line
@@ -51,40 +51,56 @@ class EntryTile extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              hasTitle ? entry.title!.trim() : entry.note,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Builder(
+              builder: (_) {
+                if (hasTitle) {
+                  final title = entry.title!.trim();
+                  final snippet = entry.note.trim();
+
+                  return Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$title: ',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,        // bolder title
+                            color: theme.colorScheme.onSurface, // strong readable color
+                          ),
+                        ),
+                        TextSpan(
+                          text: snippet,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                }
+
+                // No title → show note normally
+                return Text(
+                  entry.note.trim(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                );
+              },
             ),
+
             if (moodRatingText != null) ...[
               const SizedBox(height: 4),
               Text(
                 moodRatingText,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade700,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
                 ),
               ),
             ],
           ],
         ),
-      ),
-
-      // Edit/Delete actions
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.blueGrey),
-            tooltip: 'Edit',
-            onPressed: onEdit,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.redAccent),
-            tooltip: 'Delete',
-            onPressed: onDelete,
-          ),
-        ],
       ),
     );
   }
