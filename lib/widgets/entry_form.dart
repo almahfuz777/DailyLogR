@@ -1,18 +1,18 @@
-// lib/widgets/entry_editor.dart
+// lib/widgets/entry_form.dart
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/services/hive_service.dart'; 
 
-class EntryEditor extends StatefulWidget {
+class EntryForm extends StatefulWidget {
   final JournalEntry? initial;
-  const EntryEditor({super.key, this.initial});
+  const EntryForm({super.key, this.initial});
 
   @override
-  State<EntryEditor> createState() => _EntryEditorState();
+  State<EntryForm> createState() => _EntryFormState();
 }
 
-class _EntryEditorState extends State<EntryEditor> {
+class _EntryFormState extends State<EntryForm> {
   late DateTime _date;
   final _titleCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
@@ -45,17 +45,31 @@ class _EntryEditorState extends State<EntryEditor> {
     super.dispose();
   }
 
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(12),
+      ),
+    );
+  }
+
   Future<void> _pickDate() async {
-    final today = DateTime.now();
-    final firstAllowed = today.subtract(const Duration(days: 4)); // today+last 3 days
+    final today = DayKey.normalize(DateTime.now());
+    final firstAllowed = today.subtract(const Duration(days: 3)); // today+last 3 days
     final lastAllowed  = today;                                   // today
+
+    // clamp initial date into allowed range
+    final current = _date;
+    final isOutsideWindow = current.isBefore(firstAllowed) || current.isAfter(lastAllowed);
+    final initialDate = isOutsideWindow ? today : current;
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date.isBefore(firstAllowed) || _date.isAfter(lastAllowed) ? today : _date,
+      initialDate: initialDate,
       firstDate: firstAllowed,
       lastDate: lastAllowed,
-
       selectableDayPredicate: (day){
         final d = DayKey.normalize(day);
         return !d.isBefore(firstAllowed) && !d.isAfter(lastAllowed);
@@ -67,16 +81,10 @@ class _EntryEditorState extends State<EntryEditor> {
     }
   }
 
-  Future<void> _save() async { // 👈 now async
+  Future<void> _save() async {
     final note = _noteCtrl.text.trim();
     if (note.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Note can’t be empty'),
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.all(12),
-        )
-      );
+      _showSnack('Note can’t be empty');
       return;
     }
 
@@ -84,16 +92,11 @@ class _EntryEditorState extends State<EntryEditor> {
     final box = HiveService.journalBox;
     final newKey = DayKey.of(_date);
 
+    // Duplicate-by-date guard
     if (widget.initial == null) {
       // Creating a new entry: block if key exists
       if (box.containsKey(newKey)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An entry already exists for $newKey'),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(12),
-          ),
-        );
+        _showSnack('An entry already exists for $newKey');
         return;
       }
     } else {
@@ -101,20 +104,13 @@ class _EntryEditorState extends State<EntryEditor> {
       final originalKey = DayKey.of(DayKey.normalize(widget.initial!.date));
       final changingDateToAnotherDay = newKey != originalKey;
       if (changingDateToAnotherDay && box.containsKey(newKey)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('An entry already exists for $newKey'),
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.all(12),
-          ),
-        );
+        _showSnack('An entry already exists for $newKey');
         return;
       }
     }
 
     final entry = JournalEntry(
-      id: widget.initial?.id ??
-        DateTime.now().microsecondsSinceEpoch.toString(),
+      id: widget.initial?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
       date: _date,
       title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
       note: note,
@@ -141,7 +137,10 @@ class _EntryEditorState extends State<EntryEditor> {
               children: [
                 Text(
                   widget.initial == null ? 'New Entry' : 'Edit Entry',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 IconButton(
@@ -191,11 +190,12 @@ class _EntryEditorState extends State<EntryEditor> {
             ),
             const SizedBox(height: 12),
 
-            // Adjective + Rating (responsive, no overflow)
+            // Adjective + Rating
             LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 360;
 
+                // Adjective dropdown
                 final adjectiveField = DropdownButtonFormField<String>(
                     isExpanded: true,
                     value: _adjective != null && _adjectives.contains(_adjective) ? _adjective : null,
@@ -214,6 +214,7 @@ class _EntryEditorState extends State<EntryEditor> {
 
                 );
 
+                // Rating stars
                 final ratingField = InputDecorator(
                     decoration: const InputDecoration(
                       labelText: 'Rating',

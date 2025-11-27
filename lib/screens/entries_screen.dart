@@ -1,7 +1,7 @@
-// lib/widgets/entry_list.dart
+// lib/screens/entries_screen.dart
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/widgets/entry_detail_sheet.dart';
-import 'package:dailylogr/widgets/entry_editor.dart';
+import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/models/journal_entry.dart';
@@ -9,8 +9,8 @@ import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/widgets/empty_state.dart';
 import 'package:dailylogr/widgets/entry_tile.dart';
 
-class EntryList extends StatelessWidget {
-  const EntryList({super.key});
+class EntriesScreen extends StatelessWidget {
+  const EntriesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -44,26 +44,9 @@ class EntryList extends StatelessWidget {
                 if (!context.mounted) return;
 
                 // Handle edit action
-                if (action == 'edit') {
-                  final updated = await showModalBottomSheet<JournalEntry>(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) {
-                      return Scaffold(
-                        backgroundColor: Colors.white,
-                        body: EntryEditor(initial: e),
-                      );
-                    },
-                  );
-
-                  if (!context.mounted) return;
-
-                  if (updated != null) {
-                    await HiveService.updateEntry(e, updated);
-                  }
-                } 
+                if(action == 'edit'){
+                  await openEntryEditSheet(context, e);
+                }
                 
                 // Handle delete action 
                 else if (action == 'delete') {

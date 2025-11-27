@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-// import 'package:hive_flutter/hive_flutter.dart';
-import 'package:dailylogr/screens/home_screen.dart';
-// import 'models/journal_entry.dart';
+import 'package:dailylogr/screens/main_screen.dart';
 import 'services/hive_service.dart';
 
 void main() async {
   // Hive initialization
   WidgetsFlutterBinding.ensureInitialized();
-  // await Hive.initFlutter();
-  // // Register Hive Adapters (for custom types)
-  // Hive.registerAdapter(JournalEntryAdapter());
-  // await Hive.openBox<JournalEntry>('journal_entries');
 
   await HiveService.init();
 
@@ -30,7 +24,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: const HomeScreen(),
+      home: const MainScreen(),
     );
   }
 }
