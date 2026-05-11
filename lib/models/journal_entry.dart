@@ -13,14 +13,33 @@ class JournalEntry {
   @HiveField(6) DateTime updatedAt;
 
   JournalEntry({
+    this.id,              // added id
     required this.date, // 1 date per entry
     this.title,
     required this.note,
     this.adjective,       // an adjective that represents the day
     this.rating,          // 1-5 star rating
     DateTime? updatedAt,  // last updated at
-  }) : updatedAt = updatedAt?? DateTime.now();
+  }) : updatedAt = updatedAt ?? DateTime.now();
 
-
+  JournalEntry copyWith({
+    String? id,
+    DateTime? date,
+    String? title,
+    String? note,
+    String? adjective,
+    int? rating,
+    DateTime? updatedAt,
+  }) {
+    return JournalEntry(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      title: title ?? this.title,
+      note: note ?? this.note,
+      adjective: adjective ?? this.adjective,
+      rating: rating ?? this.rating,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
 }
