@@ -48,5 +48,18 @@ Future<void> openEntryEditSheet(
   if (updatedEntry == null) return;
 
   // Persist changes to Hive
-  await HiveService.updateEntry(prevEntry, updatedEntry);
+  try {
+    await HiveService.updateEntry(prevEntry, updatedEntry);
+  } on JournalEntryConflictException catch (error) {
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('An entry already exists for ${error.dateKey}'),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(12),
+      ),
+    );
+  }
+  
 }

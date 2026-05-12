@@ -2,7 +2,6 @@
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/models/journal_entry.dart';
-import 'package:dailylogr/services/hive_service.dart'; 
 
 class EntryForm extends StatefulWidget {
   final JournalEntry? initial;
@@ -83,30 +82,10 @@ class _EntryFormState extends State<EntryForm> {
 
   Future<void> _save() async {
     final note = _noteCtrl.text.trim();
+
     if (note.isEmpty) {
       _showSnack('Note can’t be empty');
       return;
-    }
-
-    // Duplicate-by-date guard
-    final box = HiveService.journalBox;
-    final newKey = DayKey.of(_date);
-
-    // Duplicate-by-date guard
-    if (widget.initial == null) {
-      // Creating a new entry: block if key exists
-      if (box.containsKey(newKey)) {
-        _showSnack('An entry already exists for $newKey');
-        return;
-      }
-    } else {
-      // Editing: allow same date, but block if changing to an occupied date
-      final originalKey = DayKey.of(DayKey.normalize(widget.initial!.date));
-      final changingDateToAnotherDay = newKey != originalKey;
-      if (changingDateToAnotherDay && box.containsKey(newKey)) {
-        _showSnack('An entry already exists for $newKey');
-        return;
-      }
     }
 
     final entry = JournalEntry(

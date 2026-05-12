@@ -3,6 +3,16 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 
+// Custom exception for entry conflicts (same date)
+class JournalEntryConflictException implements Exception {
+  final String dateKey;
+
+  const JournalEntryConflictException(this.dateKey);
+
+  @override
+  String toString() => 'An entry already exists for $dateKey';
+}
+
 class HiveService {
   static const String boxName = 'journal_entries';
 
@@ -20,11 +30,15 @@ class HiveService {
 
   // ---------- CRUD FUNCTIONS ----------
   
-  /// Create (or Upsert if key exists)
-  static Future<void> addEntry(JournalEntry entry) async {
+  /// Creates a new entry (unique by date) and persists it to Hive
+  static Future<void> createEntry(JournalEntry entry) async {
     final normalizedDate = DayKey.normalize(entry.date);
     final key = DayKey.of(normalizedDate);
-    
+
+    if (_box().containsKey(key)) {
+      throw JournalEntryConflictException(key);
+    }
+
     final toStore = entry.copyWith(
       date: normalizedDate,
       updatedAt: DateTime.now(),
@@ -40,6 +54,10 @@ class HiveService {
     final normalizedNewDate = DayKey.normalize(newEntry.date);
     final oldKey = DayKey.of(DayKey.normalize(oldEntry.date));
     final newKey = DayKey.of(normalizedNewDate);
+
+    if (oldKey != newKey && box.containsKey(newKey)) {
+      throw JournalEntryConflictException(newKey);
+    }
 
     final toStore = newEntry.copyWith(
       date: normalizedNewDate,

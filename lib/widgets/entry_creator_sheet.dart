@@ -25,5 +25,17 @@ Future<void> openEntryCreatorSheet(
 
   if (result == null) return;
 
-  await HiveService.addEntry(result);
+  try {
+    await HiveService.createEntry(result);
+  } on JournalEntryConflictException catch (error) {
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('An entry already exists for ${error.dateKey}'),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(12),
+      ),
+    );
+  }
 }
