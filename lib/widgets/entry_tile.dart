@@ -70,7 +70,7 @@ class EntryTile extends StatelessWidget {
                         TextSpan(
                           text: snippet,
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -95,7 +95,7 @@ class EntryTile extends StatelessWidget {
               Text(
                 moodRatingText,
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                  color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                 ),
               ),
             ],

@@ -1,11 +1,11 @@
-// lib/widgets/entry_detail_sheet.dart
+// lib/widgets/view_entry_sheet.dart
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 
-class EntryDetailSheet extends StatelessWidget {
+class ViewEntrySheet extends StatelessWidget {
   final JournalEntry entry;
-  const EntryDetailSheet({super.key, required this.entry});
+  const ViewEntrySheet({super.key, required this.entry});
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,10 @@ class EntryDetailSheet extends StatelessWidget {
                 children: [
                   Text(
                     DayKey.of(entry.date),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -57,28 +60,38 @@ class EntryDetailSheet extends StatelessWidget {
                   children: [
                     if (mood != null && mood.trim().isNotEmpty)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.blueGrey.withOpacity(0.1),
+                          color: Colors.blueGrey.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(mood, style: const TextStyle(fontSize: 12)),
                       ),
-                    if (mood != null && rating != null) const SizedBox(width: 8),
+                    if (mood != null && rating != null)
+                      const SizedBox(width: 8),
                     if (rating != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.withOpacity(0.15),
+                          color: Colors.amber.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text('⭐ $rating/5', style: const TextStyle(fontSize: 12)),
+                        child: Text(
+                          '⭐ $rating/5',
+                          style: const TextStyle(fontSize: 12),
+                        ),
                       ),
                   ],
                 ),
                 const SizedBox(height: 16),
               ],
-              
+
               // Title
               if ((entry.title?.trim().isNotEmpty ?? false)) ...[
                 Text(
@@ -89,10 +102,7 @@ class EntryDetailSheet extends StatelessWidget {
               ],
 
               // Note
-              Text(
-                entry.note,
-                style: const TextStyle(fontSize: 15),
-              ),
+              Text(entry.note, style: const TextStyle(fontSize: 15)),
               const SizedBox(height: 16),
 
               // Last updated timestamp

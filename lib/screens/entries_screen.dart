@@ -1,6 +1,6 @@
 // lib/screens/entries_screen.dart
 import 'package:dailylogr/utils/date_helper.dart';
-import 'package:dailylogr/widgets/entry_detail_sheet.dart';
+import 'package:dailylogr/widgets/view_entry_sheet.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -15,40 +15,40 @@ class EntriesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Box<JournalEntry>>(
-        valueListenable: HiveService.journalBox.listenable(),
-        builder: (context, box, _){
-          final entries = box.values.toList()..sort((a,b) => b.date.compareTo(a.date));
+      valueListenable: HiveService.journalBox.listenable(),
+      builder: (context, box, _) {
+        final entries = box.values.toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
-          if(entries.isEmpty){
-            return const EmptyState();
-          }
-          
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
-            itemCount: entries.length,
-            separatorBuilder: (context, _) => const SizedBox(height: 8),
-            itemBuilder: (context, i) {
-              final e = entries[i];
+        if (entries.isEmpty) {
+          return const EmptyState();
+        }
 
-              return EntryTile(
-                key: ValueKey(DayKey.of(DayKey.normalize(e.date))),
-                entry: e,
-                onTap: () async {
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+          itemCount: entries.length,
+          separatorBuilder: (context, _) => const SizedBox(height: 8),
+          itemBuilder: (context, i) {
+            final e = entries[i];
+
+            return EntryTile(
+              key: ValueKey(DayKey.of(DayKey.normalize(e.date))),
+              entry: e,
+              onTap: () async {
                 // Show detail sheet
                 final action = await showModalBottomSheet<String>(
                   context: context,
                   isScrollControlled: true,
-                  builder: (_) => EntryDetailSheet(entry: e),
+                  builder: (_) => ViewEntrySheet(entry: e),
                 );
 
                 if (!context.mounted) return;
 
                 // Handle edit action
-                if(action == 'edit'){
-                  await openEntryEditSheet(context, e);
+                if (action == 'edit') {
+                  await entryEditorSheet(context, initial: e);
                 }
-                
-                // Handle delete action 
+                // Handle delete action
                 else if (action == 'delete') {
                   final key = DayKey.of(DayKey.normalize(e.date));
                   final confirm = await showDialog<bool>(
@@ -72,7 +72,7 @@ class EntriesScreen extends StatelessWidget {
                   if (!context.mounted) return;
 
                   if (confirm == true) {
-                      await HiveService.deleteEntry(e);
+                    await HiveService.deleteEntry(e);
                   }
                 }
               },

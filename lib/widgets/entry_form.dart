@@ -18,12 +18,16 @@ class _EntryFormState extends State<EntryForm> {
   String? _adjective;
   int? _rating;
 
-  // emoji + adjective options
+  // emoji + adjective options (all emojis are unique)
   final List<String> _adjectives = const [
-    '😀 Happy','😞 Sad','😌 Calm','🎯 Focused','😴 Tired','😬 Anxious','🤩 Excited','🙏 Grateful',
-    '😡 Angry','😕 Confused','😇 Blessed','😐 Meh','😓 Stressed','😴 Sleepy','🤒 Sick','💪 Productive',
-    '🏖️ Relaxed','🤔 Thoughtful','😴 Rested','😃 Joyful','😔 Lonely','😤 Frustrated','😎 Cool','🤗 Loved',
-    '😕 Uncertain','😴 Exhausted','😇 Hopeful','😬 Nervous','🤩 Enthusiastic',
+    '😀 Happy',       '😞 Sad',         '😌 Calm',        '🎯 Focused',
+    '😪 Tired',       '😰 Anxious',     '🤩 Excited',     '🙏 Grateful',
+    '😡 Angry',       '😕 Confused',    '😇 Blessed',     '😐 Meh',
+    '😓 Stressed',    '😴 Sleepy',      '🤒 Sick',        '💪 Productive',
+    '🏖️ Relaxed',    '🤔 Thoughtful',  '🛌 Rested',      '😃 Joyful',
+    '😔 Lonely',      '😤 Frustrated',  '😎 Cool',        '🤗 Loved',
+    '❓ Uncertain',   '😩 Exhausted',   '🌟 Hopeful',     '😬 Nervous',
+    '🚀 Enthusiastic',
   ];
 
   @override
@@ -56,23 +60,15 @@ class _EntryFormState extends State<EntryForm> {
 
   Future<void> _pickDate() async {
     final today = DayKey.normalize(DateTime.now());
-    final firstAllowed = today.subtract(const Duration(days: 3)); // today+last 3 days
-    final lastAllowed  = today;                                   // today
-
-    // clamp initial date into allowed range
-    final current = _date;
-    final isOutsideWindow = current.isBefore(firstAllowed) || current.isAfter(lastAllowed);
-    final initialDate = isOutsideWindow ? today : current;
+    final firstAllowed = DayKey.editWindowStart; // single source of truth
+    final initialDate = DayKey.isWithinEditWindow(_date) ? _date : today;
 
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
       firstDate: firstAllowed,
-      lastDate: lastAllowed,
-      selectableDayPredicate: (day){
-        final d = DayKey.normalize(day);
-        return !d.isBefore(firstAllowed) && !d.isAfter(lastAllowed);
-      }
+      lastDate: today,
+      selectableDayPredicate: DayKey.isWithinEditWindow,
     );
 
     if (picked != null) {

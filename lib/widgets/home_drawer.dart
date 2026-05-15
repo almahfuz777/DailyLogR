@@ -1,10 +1,10 @@
 // lib/widgets/home_drawer.dart
+import 'package:dailylogr/utils/app_screens.dart';
 import 'package:flutter/material.dart';
-import 'package:dailylogr/screens/main_screen.dart'; // for Screens enum
 
 class HomeDrawer extends StatelessWidget {
-  final Screens currentScreen;
-  final ValueChanged<Screens> onScreenSelected;
+  final AppScreen currentScreen;
+  final ValueChanged<AppScreen> onScreenSelected;
   final VoidCallback onGoogleSignIn;
   final VoidCallback onLoginSignup;
 
@@ -50,26 +50,26 @@ class HomeDrawer extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.dashboard_outlined),
                     title: const Text('Dashboard'),
-                    selected: currentScreen == Screens.dashboard,
-                    onTap: () => onScreenSelected(Screens.dashboard),
+                    selected: currentScreen == AppScreen.dashboard,
+                    onTap: () => onScreenSelected(AppScreen.dashboard),
                   ),
                   ListTile(
                     leading: const Icon(Icons.list_alt_outlined),
                     title: const Text('All Entries'),
-                    selected: currentScreen == Screens.entries,
-                    onTap: () => onScreenSelected(Screens.entries),
+                    selected: currentScreen == AppScreen.entries,
+                    onTap: () => onScreenSelected(AppScreen.entries),
                   ),
                   ListTile(
                     leading: const Icon(Icons.insights_outlined),
                     title: const Text('Analytics'),
-                    selected: currentScreen == Screens.analytics,
-                    onTap: () => onScreenSelected(Screens.analytics),
+                    selected: currentScreen == AppScreen.analytics,
+                    onTap: () => onScreenSelected(AppScreen.analytics),
                   ),
                   ListTile(
                     leading: const Icon(Icons.settings_outlined),
                     title: const Text('Settings'),
-                    selected: currentScreen == Screens.settings,
-                    onTap: () => onScreenSelected(Screens.settings),
+                    selected: currentScreen == AppScreen.settings,
+                    onTap: () => onScreenSelected(AppScreen.settings),
                   ),
                   // ListTile(
                   //   leading: const Icon(Icons.close),
