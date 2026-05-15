@@ -1,18 +1,13 @@
-// lib/screens/home_screen.dart
+// lib/screens/main_screen.dart
+import 'package:dailylogr/utils/app_screens.dart';
 import 'package:dailylogr/screens/analytics_screen.dart';
 import 'package:dailylogr/screens/dashboard_screen.dart';
+import 'package:dailylogr/screens/entries_screen.dart';
 import 'package:dailylogr/screens/settings_screen.dart';
-import 'package:dailylogr/widgets/entry_creator_sheet.dart';
+import 'package:dailylogr/services/firebase_auth_service.dart';
+import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/home_drawer.dart';
 import 'package:flutter/material.dart';
-import 'package:dailylogr/screens/entries_screen.dart';
-
-enum Screens {
-  dashboard,
-  entries,
-  analytics,
-  settings,
-}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,10 +17,27 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  Screens _currentScreen = Screens.dashboard;
+  AppScreen _currentScreen = AppScreen.dashboard;
 
-  // Handle screen selection from drawer 
-  void _onScreenSelected(Screens screen) {
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      final credential = await FirebaseAuthService.signInWithGoogle();
+      final email = credential.user?.email;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(email == null ? 'Signed in.' : 'Signed in as $email.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign-in failed: $error')));
+    }
+  }
+
+  void _onScreenSelected(AppScreen screen) {
     setState(() => _currentScreen = screen);
     Navigator.of(context).pop(); // close drawer
   }
@@ -33,13 +45,13 @@ class _MainScreenState extends State<MainScreen> {
   // Get title based on current section
   String get _screenTitle {
     switch (_currentScreen) {
-      case Screens.dashboard:
+      case AppScreen.dashboard:
         return 'Dashboard';
-      case Screens.entries:
+      case AppScreen.entries:
         return 'All Entries';
-      case Screens.analytics:
+      case AppScreen.analytics:
         return 'Analytics';
-      case Screens.settings:
+      case AppScreen.settings:
         return 'Settings';
     }
   }
@@ -47,13 +59,13 @@ class _MainScreenState extends State<MainScreen> {
   // Set screen body based on current section
   Widget _buildBody() {
     switch (_currentScreen) {
-      case Screens.dashboard:
+      case AppScreen.dashboard:
         return DashboardScreen();
-      case Screens.entries:
+      case AppScreen.entries:
         return const EntriesScreen();
-      case Screens.analytics:
+      case AppScreen.analytics:
         return const AnalyticsScreen();
-      case Screens.settings:
+      case AppScreen.settings:
         return const SettingsScreen();
     }
   }
@@ -78,27 +90,20 @@ class _MainScreenState extends State<MainScreen> {
       drawer: HomeDrawer(
         currentScreen: _currentScreen,
         onScreenSelected: _onScreenSelected,
-        
-        // User Authentication Callbacks
-        onGoogleSignIn: () {
-          // TODO: Firebase Google Sign-In
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cloud sync not implemented yet.')),
-          );
-        },
+        onGoogleSignIn: _handleGoogleSignIn,
         onLoginSignup: () {
-          // TODO: Login/Signup screen
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Login/Signup not implemented yet.')),
+            const SnackBar(content: Text('Email login coming soon.')),
           );
         },
       ),
 
       // FAB (Floating Action Button)
-      floatingActionButton: 
-        (_currentScreen == Screens.dashboard || _currentScreen == Screens.entries)
+      floatingActionButton:
+          (_currentScreen == AppScreen.dashboard ||
+              _currentScreen == AppScreen.entries)
           ? FloatingActionButton(
-              onPressed: () => openEntryCreatorSheet(context),
+              onPressed: () => entryEditorSheet(context),
               backgroundColor: color.primary,
               foregroundColor: color.onPrimary,
               child: const Icon(Icons.add),

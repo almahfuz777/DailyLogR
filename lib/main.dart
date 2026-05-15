@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:dailylogr/screens/main_screen.dart';
+import 'package:dailylogr/firebase_options.dart';
 import 'services/hive_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
-  // Hive initialization
+  // Firebase initialization
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await Firebase.initializeApp();
+  // Hive initialization
   await HiveService.init();
 
   // Run the app

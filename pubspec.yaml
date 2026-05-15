@@ -38,10 +38,9 @@ dependencies:
   # hive packages
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  provider: ^6.1.5
 
   # firebase packages
-  firebase_core: ^4.2.1
+  firebase_core: ^4.9.0
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.1.0
   google_sign_in: ^7.2.0
