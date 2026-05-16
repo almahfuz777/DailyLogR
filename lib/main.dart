@@ -3,6 +3,7 @@ import 'package:dailylogr/screens/main_screen.dart';
 import 'package:dailylogr/firebase_options.dart';
 import 'services/hive_service.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async {
   // Firebase initialization
@@ -13,7 +14,11 @@ void main() async {
   await HiveService.init();
 
   // Run the app
-  runApp(const MyApp());
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
