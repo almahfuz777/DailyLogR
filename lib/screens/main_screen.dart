@@ -8,15 +8,16 @@ import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/home_drawer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends ConsumerState<MainScreen> {
   AppScreen _currentScreen = AppScreen.dashboard;
 
   Future<void> _handleGoogleSignIn() async {
@@ -60,7 +61,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBody() {
     switch (_currentScreen) {
       case AppScreen.dashboard:
-        return DashboardScreen();
+        return const DashboardScreen();
       case AppScreen.entries:
         return const EntriesScreen();
       case AppScreen.analytics:
@@ -103,7 +104,7 @@ class _MainScreenState extends State<MainScreen> {
           (_currentScreen == AppScreen.dashboard ||
               _currentScreen == AppScreen.entries)
           ? FloatingActionButton(
-              onPressed: () => entryEditorSheet(context),
+              onPressed: () => entryEditorSheet(context, ref),
               backgroundColor: color.primary,
               foregroundColor: color.onPrimary,
               child: const Icon(Icons.add),

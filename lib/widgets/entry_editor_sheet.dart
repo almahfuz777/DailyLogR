@@ -5,9 +5,13 @@ import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/widgets/entry_form.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dailylogr/providers/journal_provider.dart';
+
 /// Opens the entry bottom sheet for both **creating** and **editing**.
 Future<void> entryEditorSheet(
-  BuildContext context, {
+  BuildContext context,
+  WidgetRef ref, {
   JournalEntry? initial,
 }) async {
   final isEdit = initial != null;
@@ -37,12 +41,12 @@ Future<void> entryEditorSheet(
 
   if (updatedEntry == null) return;
 
-  // Persist changes to Hive
+  // Persist changes via provider
   try {
     if (isEdit) {
-      await HiveService.updateEntry(initial, updatedEntry);
+      await ref.read(journalProvider.notifier).updateEntry(initial, updatedEntry);
     } else {
-      await HiveService.createEntry(updatedEntry);
+      await ref.read(journalProvider.notifier).createEntry(updatedEntry);
     }
   } on JournalEntryConflictException catch (error) {
     if (!context.mounted) return;
