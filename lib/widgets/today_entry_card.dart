@@ -3,15 +3,17 @@ import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Shown on the dashboard when today's entry already exists.
 /// Previews the entry and provides an edit action.
-class TodayEntryCard extends StatelessWidget {
+class TodayEntryCard extends ConsumerWidget {
   final JournalEntry entry;
+
   const TodayEntryCard({super.key, required this.entry});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final color = theme.colorScheme;
 
@@ -48,7 +50,7 @@ class TodayEntryCard extends StatelessWidget {
                 IconButton(
                   tooltip: 'Edit',
                   icon: const Icon(Icons.edit_outlined),
-                  onPressed: () => entryEditorSheet(context, initial: entry),
+                  onPressed: () => entryEditorSheet(context, ref, initial: entry),
                 ),
               ],
             ),
