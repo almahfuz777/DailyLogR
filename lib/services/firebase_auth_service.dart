@@ -34,14 +34,15 @@ class FirebaseAuthService {
   static Future<UserCredential> signInWithGoogle() async {
     await _ensureGoogleInitialized();
 
-    if (!GoogleSignIn.instance.supportsAuthenticate()) {
-      throw UnsupportedError(
-        'Google Sign-In is not supported on this platform.',
-      );
+    // 1. Trigger the Google Sign-In flow (v7 syntax uses authenticate)
+    final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+
+    if (googleUser == null) {
+      throw StateError('Sign-in aborted by user.');
     }
 
-    final googleUser = await GoogleSignIn.instance.authenticate();
-    final googleAuth = googleUser.authentication;
+    // 2. Obtain the auth details (v7 no longer includes accessToken here)
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
     if (googleAuth.idToken == null) {
       throw StateError('Google Sign-In did not return an ID token. '
@@ -49,11 +50,13 @@ class FirebaseAuthService {
           'from your Firebase project.');
     }
 
+    // 3. Create a new credential (Firebase only needs the idToken)
     final credential = GoogleAuthProvider.credential(
       idToken: googleAuth.idToken,
     );
 
-    return _auth.signInWithCredential(credential);
+    // 4. Sign in to Firebase with the Google credential
+    return await _auth.signInWithCredential(credential);
   }
 
   // ── Sign Out ──────────────────────────────────────────────────────────────
@@ -63,6 +66,5 @@ class FirebaseAuthService {
       _auth.signOut(),
       if (_googleInitialized) GoogleSignIn.instance.signOut(),
     ]);
-    _googleInitialized = false;
   }
 }
