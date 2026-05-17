@@ -5,6 +5,7 @@ import 'package:dailylogr/screens/dashboard_screen.dart';
 import 'package:dailylogr/screens/entries_screen.dart';
 import 'package:dailylogr/screens/settings_screen.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
+import 'package:dailylogr/widgets/auth_sheet.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/home_drawer.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   AppScreen _currentScreen = AppScreen.dashboard;
 
   Future<void> _handleGoogleSignIn() async {
+    Navigator.of(context).pop(); // close drawer first
     try {
       final credential = await FirebaseAuthService.signInWithGoogle();
       final email = credential.user?.email;
@@ -39,6 +41,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 
   Future<void> _handleLogout() async {
+    Navigator.of(context).pop(); // close drawer first
     try {
       await FirebaseAuthService.signOut();
       if (!mounted) return;
@@ -108,9 +111,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         onScreenSelected: _onScreenSelected,
         onGoogleSignIn: _handleGoogleSignIn,
         onLoginSignup: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Email login coming soon.')),
-          );
+          Navigator.of(context).pop(); // close drawer first
+          showAuthSheet(context);
         },
         onLogout: _handleLogout,
       ),
