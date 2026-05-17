@@ -2,6 +2,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/utils/date_helper.dart';
+import 'package:dailylogr/services/sync_service.dart';
 
 // Custom exception for entry conflicts (same date)
 class JournalEntryConflictException implements Exception {
@@ -45,6 +46,8 @@ class HiveService {
     );
     
     await _box().put(key, toStore);
+    // Sync to Cloud
+    SyncService.pushEntry(toStore);
   }
 
   // Update (existing entry)
@@ -66,14 +69,33 @@ class HiveService {
 
     if (oldKey != newKey) {
       await box.delete(oldKey);
+      // Soft delete the old entry in cloud since the date key changed
+      final deletedOld = oldEntry.copyWith(isDeleted: true, deletedAt: DateTime.now());
+      SyncService.pushEntry(deletedOld);
     }
     await box.put(newKey, toStore);
+    SyncService.pushEntry(toStore);
   }
 
-  // Delete (by date)
+  // Soft Delete
   static Future<void> deleteEntry(JournalEntry entry) async {
     final key = DayKey.of(DayKey.normalize(entry.date));
+    
+    final toStore = entry.copyWith(
+      isDeleted: true,
+      deletedAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    
+    await _box().put(key, toStore); // Keep in Hive, just marked as deleted
+    SyncService.pushEntry(toStore);
+  }
+  
+  // Permanent Delete
+  static Future<void> permanentlyDeleteEntry(JournalEntry entry) async {
+    final key = DayKey.of(DayKey.normalize(entry.date));
     await _box().delete(key);
+    SyncService.permanentlyDeleteEntry(entry);
   }
 
   // ---------- Helper ----------
