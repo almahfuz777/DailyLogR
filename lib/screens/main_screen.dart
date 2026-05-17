@@ -38,6 +38,21 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     }
   }
 
+  Future<void> _handleLogout() async {
+    try {
+      await FirebaseAuthService.signOut();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logged out.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Logout failed: $error')),
+      );
+    }
+  }
+
   void _onScreenSelected(AppScreen screen) {
     setState(() => _currentScreen = screen);
     Navigator.of(context).pop(); // close drawer
@@ -97,6 +112,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             const SnackBar(content: Text('Email login coming soon.')),
           );
         },
+        onLogout: _handleLogout,
       ),
 
       // FAB (Floating Action Button)

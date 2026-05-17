@@ -1,12 +1,15 @@
 // lib/widgets/home_drawer.dart
 import 'package:dailylogr/utils/app_screens.dart';
 import 'package:flutter/material.dart';
+import 'package:dailylogr/services/firebase_auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeDrawer extends StatelessWidget {
   final AppScreen currentScreen;
   final ValueChanged<AppScreen> onScreenSelected;
   final VoidCallback onGoogleSignIn;
   final VoidCallback onLoginSignup;
+  final VoidCallback onLogout;
 
   const HomeDrawer({
     super.key,
@@ -14,6 +17,7 @@ class HomeDrawer extends StatelessWidget {
     required this.onScreenSelected,
     required this.onGoogleSignIn,
     required this.onLoginSignup,
+    required this.onLogout,
   });
 
   @override
@@ -71,11 +75,6 @@ class HomeDrawer extends StatelessWidget {
                     selected: currentScreen == AppScreen.settings,
                     onTap: () => onScreenSelected(AppScreen.settings),
                   ),
-                  // ListTile(
-                  //   leading: const Icon(Icons.close),
-                  //   title: const Text('Close'),
-                  //   onTap: () => Navigator.pop(context),
-                  // ),
                 ],
               ),
             ),
@@ -85,24 +84,80 @@ class HomeDrawer extends StatelessWidget {
             const Divider(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Sync your journal with the cloud',
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton.icon(
-                    onPressed: onGoogleSignIn,
-                    icon: const Icon(Icons.account_circle),
-                    label: const Text('Continue with Google'),
-                  ),
-                  TextButton(
-                    onPressed: onLoginSignup,
-                    child: const Text('Login / Signup'),
-                  ),
-                ],
+              child: StreamBuilder<User?>(
+                stream: FirebaseAuthService.authStateChanges,
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+
+                  if (user != null) {
+                    // Logged In State
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundImage: user.photoURL != null 
+                                  ? NetworkImage(user.photoURL!) 
+                                  : null,
+                              child: user.photoURL == null 
+                                  ? const Icon(Icons.person, size: 16) 
+                                  : null,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    user.displayName ?? 'Journaler',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    user.email ?? '',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: onLogout,
+                          icon: const Icon(Icons.logout),
+                          label: const Text('Log Out'),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // Logged Out State
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Sync your journal with the cloud',
+                        style: Theme.of(context).textTheme.labelMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: onGoogleSignIn,
+                        icon: const Icon(Icons.account_circle),
+                        label: const Text('Continue with Google'),
+                      ),
+                      TextButton(
+                        onPressed: onLoginSignup,
+                        child: const Text('Login / Signup'),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
