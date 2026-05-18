@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dailylogr/providers/sync_provider.dart';
-import 'package:dailylogr/services/sync_service.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:dailylogr/widgets/auth_sheet.dart';
 
@@ -77,12 +76,9 @@ class SyncStatusAction extends ConsumerWidget {
           onPressed: () async {
              if (status == SyncStatus.syncing) return;
              
-             ref.read(syncStatusProvider.notifier).setStatus(SyncStatus.syncing);
              try {
-                await SyncService.pullSync();
-                ref.read(syncStatusProvider.notifier).setStatus(SyncStatus.synced);
+                await ref.read(syncStatusProvider.notifier).sync();
              } catch (e) {
-                ref.read(syncStatusProvider.notifier).setStatus(SyncStatus.error);
                 if (context.mounted) {
                    ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Sync failed: $e')),

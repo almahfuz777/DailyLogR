@@ -29,20 +29,16 @@ class FirebaseAuthService {
 
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ── Google Sign-In ────────────────────────────────────────────────────────
+  // ── Google Authentication ────────────────────────────────────────────────────────
 
   static Future<UserCredential> signInWithGoogle() async {
     await _ensureGoogleInitialized();
 
-    // 1. Trigger the Google Sign-In flow (v7 syntax uses authenticate)
-    final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+    // Trigger the Google Sign-In flow
+    final googleUser = await GoogleSignIn.instance.authenticate();
 
-    if (googleUser == null) {
-      throw StateError('Sign-in aborted by user.');
-    }
-
-    // 2. Obtain the auth details (v7 no longer includes accessToken here)
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    // Obtain the auth details
+    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
     if (googleAuth.idToken == null) {
       throw StateError('Google Sign-In did not return an ID token. '
@@ -50,16 +46,16 @@ class FirebaseAuthService {
           'from your Firebase project.');
     }
 
-    // 3. Create a new credential (Firebase only needs the idToken)
+    // Create a new credential
     final credential = GoogleAuthProvider.credential(
       idToken: googleAuth.idToken,
     );
 
-    // 4. Sign in to Firebase with the Google credential
+    // Sign in to Firebase with the Google credential
     return await _auth.signInWithCredential(credential);
   }
 
-  // ── Email/Password Sign-In ────────────────────────────────────────────────
+  // ── Email/Password Authentication ────────────────────────────────────────────────
 
   static Future<UserCredential> signInWithEmail(String email, String password) async {
     return await _auth.signInWithEmailAndPassword(email: email, password: password);

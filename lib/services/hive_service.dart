@@ -15,18 +15,87 @@ class JournalEntryConflictException implements Exception {
 }
 
 class HiveService {
-  static const String boxName = 'journal_entries';
+  static const String _anonymousBoxName = 'journal_entries';
 
-  // INIT
+  /// The currently active box name, keyed by UID when authenticated.
+  static String _activeBoxName = _anonymousBoxName;
+
+  // INIT — opens the anonymous (default) box at app startup.
   static Future<void> init() async {
     await Hive.initFlutter();
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(JournalEntryAdapter());
     }
-    await Hive.openBox<JournalEntry>(boxName);
+    await Hive.openBox<JournalEntry>(_anonymousBoxName);
   }
 
-  static Box<JournalEntry> _box() => Hive.box<JournalEntry>(boxName);
+  /// Switches the active Hive box when a user logs in or out.
+  /// - **Login** ([uid] non-null): opens the user-specific box.
+  /// - **Logout** ([uid] null): wipes the user-specific box from disk
+  static Future<void> switchUser(String? uid) async {
+    final targetBoxName = uid != null ? 'journal_entries_$uid' : _anonymousBoxName;
+
+    // Already on the correct box — nothing to do.
+    if (targetBoxName == _activeBoxName) return;
+
+    final previousBoxName = _activeBoxName;
+
+    // Open the target box if not already open.
+    if (!Hive.isBoxOpen(targetBoxName)) {
+      await Hive.openBox<JournalEntry>(targetBoxName);
+    }
+
+    _activeBoxName = targetBoxName;
+
+    // On logout: wipe the authenticated user's box from disk.
+    if (uid == null && previousBoxName != _anonymousBoxName) {
+      if (Hive.isBoxOpen(previousBoxName)) {
+        final box = Hive.box<JournalEntry>(previousBoxName);
+        await box.deleteFromDisk();
+      }
+    }
+  }
+
+  /// Whether the anonymous box has entries waiting to be migrated.
+  static bool get hasAnonymousEntries {
+    if (!Hive.isBoxOpen(_anonymousBoxName)) return false;
+    return Hive.box<JournalEntry>(_anonymousBoxName).isNotEmpty;
+  }
+
+  /// Number of entries in the anonymous box.
+  static int get anonymousEntryCount {
+    if (!Hive.isBoxOpen(_anonymousBoxName)) return 0;
+    return Hive.box<JournalEntry>(_anonymousBoxName).length;
+  }
+
+  /// Merges anonymous entries into the current user's box (last-write-wins) and pushes each to Firestore for cloud sync.
+  static Future<void> migrateAnonymousEntries() async {
+    final anonBox = Hive.box<JournalEntry>(_anonymousBoxName);
+    if (anonBox.isEmpty) return;
+
+    final userBox = _box();
+
+    for (final key in anonBox.keys.toList()) {
+      final anonEntry = anonBox.get(key);
+      if (anonEntry == null) continue;
+
+      final existing = userBox.get(key);
+      if (existing == null || anonEntry.updatedAt.isAfter(existing.updatedAt)) {
+        await userBox.put(key, anonEntry);
+        SyncService.pushEntry(anonEntry);
+      }
+    }
+
+    await anonBox.clear();
+  }
+
+  /// Discards all anonymous entries without merging.
+  static Future<void> discardAnonymousEntries() async {
+    if (!Hive.isBoxOpen(_anonymousBoxName)) return;
+    await Hive.box<JournalEntry>(_anonymousBoxName).clear();
+  }
+
+  static Box<JournalEntry> _box() => Hive.box<JournalEntry>(_activeBoxName);
 
 
   // ---------- CRUD FUNCTIONS ----------
@@ -101,5 +170,5 @@ class HiveService {
   // ---------- Helper ----------
 
   // Public accessor to the opened box
-  static Box<JournalEntry> get journalBox => Hive.box<JournalEntry>(boxName);
+  static Box<JournalEntry> get journalBox => Hive.box<JournalEntry>(_activeBoxName);
 }
