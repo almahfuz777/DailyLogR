@@ -173,7 +173,7 @@ class _EntryFormState extends State<EntryForm> {
                 // Adjective dropdown
                 final adjectiveField = DropdownButtonFormField<String>(
                     isExpanded: true,
-                    value: _adjective != null && _adjectives.contains(_adjective) ? _adjective : null,
+                    initialValue: _adjective != null && _adjectives.contains(_adjective) ? _adjective : null,
                     items: _adjectives
                         .map((a) => DropdownMenuItem(
                               value: a,

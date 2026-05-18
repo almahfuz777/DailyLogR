@@ -209,7 +209,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
                   ),
                 ),
                 filled: true,
-                fillColor: color.surfaceContainerHighest.withOpacity(0.3),
+                fillColor: color.surfaceContainerHighest.withValues(alpha: 0.3),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty || !value.contains('@')) {
@@ -235,7 +235,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
                   ),
                 ),
                 filled: true,
-                fillColor: color.surfaceContainerHighest.withOpacity(0.3),
+                fillColor: color.surfaceContainerHighest.withValues(alpha: 0.3),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword ? Icons.visibility : Icons.visibility_off,
