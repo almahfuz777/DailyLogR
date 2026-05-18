@@ -20,14 +20,24 @@ class SyncStatusAction extends ConsumerWidget {
             icon: const Icon(Icons.cloud_off_outlined),
             tooltip: 'Not synced',
             onPressed: () {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Sign in to sync your logs with the cloud'),
-                  action: SnackBarAction(
-                    label: 'Sign In',
-                    onPressed: () => showAuthSheet(context),
-                  ),
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Cloud Sync'),
+                  content: const Text('Sign in to back up and sync your logs with the cloud.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context); // close dialog
+                        showAuthSheet(context); // open auth sheet
+                      },
+                      child: const Text('Sign In'),
+                    ),
+                  ],
                 ),
               );
             },
