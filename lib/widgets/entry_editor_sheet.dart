@@ -13,14 +13,33 @@ Future<void> entryEditorSheet(
   BuildContext context,
   WidgetRef ref, {
   JournalEntry? initial,
+  DateTime? initialDate,
 }) async {
   final isEdit = initial != null;
+  final normalizedInitialDate = initialDate == null
+      ? null
+      : DayKey.normalize(initialDate);
 
   // Guard: enforce the 4-day edit window *before* any async gap.
   if (isEdit && !DayKey.isWithinEditWindow(initial.date)) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('You can only edit entries from the last 4 days.'),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(12),
+      ),
+    );
+    return;
+  }
+
+  if (!isEdit &&
+      normalizedInitialDate != null &&
+      !DayKey.isWithinEditWindow(normalizedInitialDate)) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'You can only create entries within the editable window.',
+        ),
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.all(12),
       ),
@@ -35,7 +54,7 @@ Future<void> entryEditorSheet(
     backgroundColor: Colors.transparent,
     builder: (ctx) => Scaffold(
       backgroundColor: Theme.of(ctx).colorScheme.surface,
-      body: EntryForm(initial: initial),
+      body: EntryForm(initial: initial, initialDate: normalizedInitialDate),
     ),
   );
 
@@ -44,7 +63,9 @@ Future<void> entryEditorSheet(
   // Persist changes via provider
   try {
     if (isEdit) {
-      await ref.read(journalProvider.notifier).updateEntry(initial, updatedEntry);
+      await ref
+          .read(journalProvider.notifier)
+          .updateEntry(initial, updatedEntry);
     } else {
       await ref.read(journalProvider.notifier).createEntry(updatedEntry);
     }

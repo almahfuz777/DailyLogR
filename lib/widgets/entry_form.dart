@@ -5,7 +5,9 @@ import 'package:dailylogr/models/journal_entry.dart';
 
 class EntryForm extends StatefulWidget {
   final JournalEntry? initial;
-  const EntryForm({super.key, this.initial});
+  final DateTime? initialDate;
+
+  const EntryForm({super.key, this.initial, this.initialDate});
 
   @override
   State<EntryForm> createState() => _EntryFormState();
@@ -55,7 +57,7 @@ class _EntryFormState extends State<EntryForm> {
   void initState() {
     super.initState();
     final e = widget.initial;
-    _date = DayKey.normalize(e?.date ?? DateTime.now());
+    _date = DayKey.normalize(e?.date ?? widget.initialDate ?? DateTime.now());
     _titleCtrl.text = e?.title ?? '';
     _noteCtrl.text = e?.note ?? '';
     _adjective = e?.adjective;
@@ -165,7 +167,9 @@ class _EntryFormState extends State<EntryForm> {
                             label: Text(adj),
                             selected: selected,
                             onSelected: (_) {
-                              setState(() => _adjective = selected ? null : adj);
+                              setState(
+                                () => _adjective = selected ? null : adj,
+                              );
                               Navigator.pop(ctx);
                             },
                             showCheckmark: false,
@@ -298,8 +302,8 @@ class _EntryFormState extends State<EntryForm> {
                   TextField(
                     controller: _titleCtrl,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Title',
                       hintStyle: TextStyle(
@@ -356,11 +360,18 @@ class _EntryFormState extends State<EntryForm> {
                     onTap: _pickDate,
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_today_outlined, size: 18, color: color.onSurfaceVariant),
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 18,
+                            color: color.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             DayKey.ofShort(_date),
@@ -381,13 +392,20 @@ class _EntryFormState extends State<EntryForm> {
                     onTap: _showMoodPicker,
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Text(
                         _adjective ?? '😊 Mood',
                         style: TextStyle(
                           fontSize: 14,
-                          color: _adjective != null ? color.onSurface : color.onSurfaceVariant,
-                          fontWeight: _adjective != null ? FontWeight.w500 : FontWeight.w400,
+                          color: _adjective != null
+                              ? color.onSurface
+                              : color.onSurfaceVariant,
+                          fontWeight: _adjective != null
+                              ? FontWeight.w500
+                              : FontWeight.w400,
                         ),
                       ),
                     ),
@@ -399,13 +417,18 @@ class _EntryFormState extends State<EntryForm> {
                     onTap: _showRatingPicker,
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: List.generate(5, (i) {
                           final filled = (_rating ?? 0) >= i + 1;
                           return Icon(
-                            filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                            filled
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
                             size: 22,
                             color: filled ? Colors.amber : color.outlineVariant,
                           );
@@ -422,4 +445,3 @@ class _EntryFormState extends State<EntryForm> {
     );
   }
 }
-

@@ -1,8 +1,8 @@
 // lib/screens/dashboard_screen.dart
-import 'package:dailylogr/utils/date_helper.dart';
-import 'package:dailylogr/widgets/today_entry_card.dart';
-import 'package:dailylogr/widgets/write_prompt_card.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
+import 'package:dailylogr/utils/date_helper.dart';
+import 'package:dailylogr/widgets/dashboard_entry_carousel.dart';
+import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,65 +21,71 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(journalProvider);
-
-    final todayKey = DayKey.of(DayKey.normalize(DateTime.now()));
-
-    // Find today's entry in the list
-    final todayEntry = entries.where((e) {
-      return DayKey.of(DayKey.normalize(e.date)) == todayKey;
-    }).firstOrNull;
+    final carouselItems = DashboardCarouselItems.fromEntries(entries);
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final carouselHeight = (screenHeight * 0.48).clamp(340.0, 430.0);
 
     return StreamBuilder<User?>(
       stream: FirebaseAuthService.authStateChanges,
       builder: (context, snapshot) {
         final user = snapshot.data;
-        
-        // Use Google displayName, fallback to email prefix if email/pass login
+        final color = Theme.of(context).colorScheme;
+
         String? displayName = user?.displayName;
         if (displayName == null && user?.email != null) {
-          // Capitalize first letter of email prefix for better UX
           final emailPrefix = user!.email!.split('@')[0];
-          displayName = emailPrefix.isNotEmpty 
+          displayName = emailPrefix.isNotEmpty
               ? '${emailPrefix[0].toUpperCase()}${emailPrefix.substring(1)}'
               : emailPrefix;
         }
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Personalized Greeting Section
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24, left: 4, top: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getGreeting(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      displayName != null ? '$displayName!' : 'Ready to log?',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
-                  ],
-                ),
+        return Column(
+          children: [
+            // Personalized Greeting
+            Padding(
+              padding: const EdgeInsets.only(
+                bottom: 8,
+                left: 20,
+                right: 20,
+                top: 24,
               ),
-              
-              // Today's Entry Component
-              todayEntry == null
-                  ? const WritePromptCard()
-                  : TodayEntryCard(entry: todayEntry),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getGreeting(),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: color.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    displayName != null ? '$displayName!' : 'Ready to log?',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Carousel
+            SizedBox(
+              height: carouselHeight,
+              child: DashboardEntryCarousel(
+                items: carouselItems,
+                onCardTap: (item) {
+                  if (item.entry != null) {
+                    entryEditorSheet(context, ref, initial: item.entry);
+                  } else if (DayKey.isWithinEditWindow(item.date)) {
+                    entryEditorSheet(context, ref, initialDate: item.date);
+                  }
+                },
+              ),
+            ),
+          ],
         );
       },
     );
