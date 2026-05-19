@@ -15,18 +15,39 @@ class _EntryFormState extends State<EntryForm> {
   late DateTime _date;
   final _titleCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
+  final _noteFocus = FocusNode();
   String? _adjective;
   int? _rating;
 
-  // emoji + adjective options (all emojis are unique)
   final List<String> _adjectives = const [
-    '😀 Happy',       '😞 Sad',         '😌 Calm',        '🎯 Focused',
-    '😪 Tired',       '😰 Anxious',     '🤩 Excited',     '🙏 Grateful',
-    '😡 Angry',       '😕 Confused',    '😇 Blessed',     '😐 Meh',
-    '😓 Stressed',    '😴 Sleepy',      '🤒 Sick',        '💪 Productive',
-    '🏖️ Relaxed',    '🤔 Thoughtful',  '🛌 Rested',      '😃 Joyful',
-    '😔 Lonely',      '😤 Frustrated',  '😎 Cool',        '🤗 Loved',
-    '❓ Uncertain',   '😩 Exhausted',   '🌟 Hopeful',     '😬 Nervous',
+    '😀 Happy',
+    '😞 Sad',
+    '😌 Calm',
+    '🎯 Focused',
+    '😪 Tired',
+    '😰 Anxious',
+    '🤩 Excited',
+    '🙏 Grateful',
+    '😡 Angry',
+    '😕 Confused',
+    '😇 Blessed',
+    '😐 Meh',
+    '😓 Stressed',
+    '😴 Sleepy',
+    '🤒 Sick',
+    '💪 Productive',
+    '🏖️ Relaxed',
+    '🤔 Thoughtful',
+    '🛌 Rested',
+    '😃 Joyful',
+    '😔 Lonely',
+    '😤 Frustrated',
+    '😎 Cool',
+    '🤗 Loved',
+    '❓ Uncertain',
+    '😩 Exhausted',
+    '🌟 Hopeful',
+    '😬 Nervous',
     '🚀 Enthusiastic',
   ];
 
@@ -45,6 +66,7 @@ class _EntryFormState extends State<EntryForm> {
   void dispose() {
     _titleCtrl.dispose();
     _noteCtrl.dispose();
+    _noteFocus.dispose();
     super.dispose();
   }
 
@@ -60,7 +82,7 @@ class _EntryFormState extends State<EntryForm> {
 
   Future<void> _pickDate() async {
     final today = DayKey.normalize(DateTime.now());
-    final firstAllowed = DayKey.editWindowStart; // single source of truth
+    final firstAllowed = DayKey.editWindowStart;
     final initialDate = DayKey.isWithinEditWindow(_date) ? _date : today;
 
     final picked = await showDatePicker(
@@ -80,16 +102,20 @@ class _EntryFormState extends State<EntryForm> {
     final note = _noteCtrl.text.trim();
 
     if (note.isEmpty) {
-      _showSnack('Note can’t be empty');
+      _showSnack("Note can't be empty");
       return;
     }
 
     final entry = JournalEntry(
-      id: widget.initial?.id ?? DateTime.now().microsecondsSinceEpoch.toString(),
+      id:
+          widget.initial?.id ??
+          DateTime.now().microsecondsSinceEpoch.toString(),
       date: _date,
       title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
       note: note,
-      adjective: (_adjective != null && _adjective!.trim().isNotEmpty) ? _adjective : null,
+      adjective: (_adjective != null && _adjective!.trim().isNotEmpty)
+          ? _adjective
+          : null,
       rating: _rating,
       updatedAt: DateTime.now(),
     );
@@ -97,153 +123,303 @@ class _EntryFormState extends State<EntryForm> {
     Navigator.pop(context, entry);
   }
 
+  void _showMoodPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      enableDrag: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.75,
+          expand: false,
+          builder: (ctx, scrollController) {
+            final color = Theme.of(ctx).colorScheme;
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // const SizedBox(height: 16),
+                  Text(
+                    'How was your day?',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _adjectives.map((adj) {
+                          final selected = _adjective == adj;
+                          return ChoiceChip(
+                            label: Text(adj),
+                            selected: selected,
+                            onSelected: (_) {
+                              setState(() => _adjective = selected ? null : adj);
+                              Navigator.pop(ctx);
+                            },
+                            showCheckmark: false,
+                            selectedColor: color.primaryContainer,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showRatingPicker() {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      enableDrag: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final color = Theme.of(ctx).colorScheme;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Rate your day',
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (i) {
+                      final idx = i + 1;
+                      final filled = (_rating ?? 0) >= idx;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() => _rating = idx);
+                          setSheetState(() {});
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          child: Icon(
+                            filled
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            size: 40,
+                            color: filled ? Colors.amber : color.outlineVariant,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_rating != null)
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _rating = null);
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Clear rating'),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final insets = MediaQuery.of(context).viewInsets;
+    final color = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + insets.bottom),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Row(
-              children: [
-                Text(
-                  widget.initial == null ? 'New Entry' : 'Edit Entry',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Date
-            Row(
-              children: [
-                Text(
-                  DayKey.of(_date),
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: _pickDate,
-                  icon: const Icon(Icons.calendar_today),
-                  label: const Text('Pick date'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Title
-            TextField(
-              controller: _titleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Title (optional)',
-                border: OutlineInputBorder(),
+    return Column(
+      children: [
+        // Top bar
+        Container(
+          decoration: BoxDecoration(
+            color: color.surfaceContainer,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Note
-            TextField(
-              controller: _noteCtrl,
-              minLines: 4,
-              maxLines: 8,
-              decoration: const InputDecoration(
-                labelText: 'Note',
-                border: OutlineInputBorder(),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+                tooltip: 'Discard',
               ),
-            ),
-            const SizedBox(height: 12),
-
-            // Adjective + Rating
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 360;
-
-                // Adjective dropdown
-                final adjectiveField = DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    initialValue: _adjective != null && _adjectives.contains(_adjective) ? _adjective : null,
-                    items: _adjectives
-                        .map((a) => DropdownMenuItem(
-                              value: a,
-                              child: Text(a, overflow: TextOverflow.ellipsis),
-                            ))
-                        .toList(),
-                    onChanged: (v) => setState(() => _adjective = v),
-                    decoration: const InputDecoration(
-                      labelText: 'Day adjective',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-
-                );
-
-                // Rating stars
-                final ratingField = InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Rating',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: List.generate(5, (i) {
-                        final idx = i + 1;
-                        final filled = (_rating ?? 0) >= idx;
-                        return GestureDetector(
-                          onTap: () => setState(() => _rating = idx),
-                          child: Icon(filled ? Icons.star : Icons.star_border, size: 20),
-                        );
-                      }),
-                    ),
-
-                );
-
-                if (isNarrow) {
-                  return Column(
-                    children: [
-                      adjectiveField,
-                      const SizedBox(height: 12),
-                      ratingField,
-                    ],
-                  );
-                } else {
-                  return Row(
-                    children: [
-                      Expanded(child: adjectiveField),
-                      const SizedBox(width: 12),
-                      Expanded(child: ratingField),
-                    ],
-                  );
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Save
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
+              const Spacer(),
+              FilledButton.tonalIcon(
                 onPressed: _save,
-                icon: const Icon(Icons.check),
+                icon: const Icon(Icons.check, size: 18),
                 label: const Text('Save'),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+
+        // Content area — note field fills remaining height and scrolls internally
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _noteFocus.requestFocus(),
+            behavior: HitTestBehavior.translucent,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _titleCtrl,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                    decoration: InputDecoration(
+                      hintText: 'Title',
+                      hintStyle: TextStyle(
+                        color: color.onSurfaceVariant.withValues(alpha: 0.65),
+                      ),
+                      border: InputBorder.none,
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _noteCtrl,
+                      focusNode: _noteFocus,
+                      expands: true,
+                      minLines: null,
+                      maxLines: null,
+                      textAlignVertical: TextAlignVertical.top,
+                      keyboardType: TextInputType.multiline,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      decoration: InputDecoration(
+                        hintText: 'Note',
+                        hintStyle: TextStyle(
+                          color: color.onSurfaceVariant.withValues(alpha: 0.65),
+                        ),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Bottom toolbar — enlarged and pinned to bottom
+        Container(
+          decoration: BoxDecoration(
+            color: color.surfaceContainer,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                children: [
+                  // Date
+                  InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_today_outlined, size: 18, color: color.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Text(
+                            DayKey.ofShort(_date),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: color.onSurfaceVariant,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Mood
+                  InkWell(
+                    onTap: _showMoodPicker,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Text(
+                        _adjective ?? '😊 Mood',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: _adjective != null ? color.onSurface : color.onSurfaceVariant,
+                          fontWeight: _adjective != null ? FontWeight.w500 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Rating stars
+                  InkWell(
+                    onTap: _showRatingPicker,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(5, (i) {
+                          final filled = (_rating ?? 0) >= i + 1;
+                          return Icon(
+                            filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                            size: 22,
+                            color: filled ? Colors.amber : color.outlineVariant,
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
+
