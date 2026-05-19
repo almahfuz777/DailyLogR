@@ -29,19 +29,16 @@ class FirebaseAuthService {
 
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // ── Google Sign-In ────────────────────────────────────────────────────────
+  // ── Google Authentication ────────────────────────────────────────────────────────
 
   static Future<UserCredential> signInWithGoogle() async {
     await _ensureGoogleInitialized();
 
-    if (!GoogleSignIn.instance.supportsAuthenticate()) {
-      throw UnsupportedError(
-        'Google Sign-In is not supported on this platform.',
-      );
-    }
-
+    // Trigger the Google Sign-In flow
     final googleUser = await GoogleSignIn.instance.authenticate();
-    final googleAuth = googleUser.authentication;
+
+    // Obtain the auth details
+    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
 
     if (googleAuth.idToken == null) {
       throw StateError('Google Sign-In did not return an ID token. '
@@ -49,11 +46,64 @@ class FirebaseAuthService {
           'from your Firebase project.');
     }
 
+    // Create a new credential
     final credential = GoogleAuthProvider.credential(
       idToken: googleAuth.idToken,
     );
 
-    return _auth.signInWithCredential(credential);
+    // Sign in to Firebase with the Google credential
+    return await _auth.signInWithCredential(credential);
+  }
+
+  // ── Email/Password Authentication ────────────────────────────────────────────────
+
+  static Future<UserCredential> signInWithEmail(String email, String password) async {
+    return await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  static Future<UserCredential> signUpWithEmail(String email, String password) async {
+    return await _auth.createUserWithEmailAndPassword(email: email, password: password);
+  }
+
+  // ── Password Management ───────────────────────────────────────────────────
+
+  static Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  static Future<void> updatePassword(String newPassword, {String? oldPassword}) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      if (oldPassword != null && user.email != null) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!, 
+          password: oldPassword,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+      await user.updatePassword(newPassword);
+    }
+  }
+
+  // ── Account Linking ───────────────────────────────────────────────────────
+
+  static Future<void> linkGoogleAccount() async {
+    final user = currentUser;
+    if (user == null) throw Exception('No user signed in');
+
+    await _ensureGoogleInitialized();
+    final googleUser = await GoogleSignIn.instance.authenticate();
+    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+    
+    if (googleAuth.idToken == null) {
+      throw StateError('Google Sign-In did not return an ID token.');
+    }
+
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+
+    await user.linkWithCredential(credential);
   }
 
   // ── Sign Out ──────────────────────────────────────────────────────────────
@@ -63,6 +113,5 @@ class FirebaseAuthService {
       _auth.signOut(),
       if (_googleInitialized) GoogleSignIn.instance.signOut(),
     ]);
-    _googleInitialized = false;
   }
 }

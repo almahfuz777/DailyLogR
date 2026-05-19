@@ -1,12 +1,11 @@
 // lib/screens/main_screen.dart
 import 'package:dailylogr/utils/app_screens.dart';
-import 'package:dailylogr/screens/analytics_screen.dart';
-import 'package:dailylogr/screens/dashboard_screen.dart';
-import 'package:dailylogr/screens/entries_screen.dart';
-import 'package:dailylogr/screens/settings_screen.dart';
-import 'package:dailylogr/services/firebase_auth_service.dart';
+import 'package:dailylogr/providers/auth_lifecycle_provider.dart';
+import 'package:dailylogr/services/hive_service.dart';
+import 'package:dailylogr/widgets/auth_sheet.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/home_drawer.dart';
+import 'package:dailylogr/widgets/sync_status_action.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,22 +19,13 @@ class MainScreen extends ConsumerStatefulWidget {
 class _MainScreenState extends ConsumerState<MainScreen> {
   AppScreen _currentScreen = AppScreen.dashboard;
 
-  Future<void> _handleGoogleSignIn() async {
-    try {
-      final credential = await FirebaseAuthService.signInWithGoogle();
-      final email = credential.user?.email;
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(email == null ? 'Signed in.' : 'Signed in as $email.'),
-        ),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Sign-in failed: $error')));
-    }
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the auth lifecycle provider so it starts listening to auth changes immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authLifecycleProvider);
+    });
   }
 
   void _onScreenSelected(AppScreen screen) {
@@ -43,66 +33,37 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     Navigator.of(context).pop(); // close drawer
   }
 
-  // Get title based on current section
-  String get _screenTitle {
-    switch (_currentScreen) {
-      case AppScreen.dashboard:
-        return 'Dashboard';
-      case AppScreen.entries:
-        return 'All Entries';
-      case AppScreen.analytics:
-        return 'Analytics';
-      case AppScreen.settings:
-        return 'Settings';
-    }
-  }
-
-  // Set screen body based on current section
-  Widget _buildBody() {
-    switch (_currentScreen) {
-      case AppScreen.dashboard:
-        return const DashboardScreen();
-      case AppScreen.entries:
-        return const EntriesScreen();
-      case AppScreen.analytics:
-        return const AnalyticsScreen();
-      case AppScreen.settings:
-        return const SettingsScreen();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
 
+    // React to pending migration signal from the auth lifecycle provider.
+    ref.listen<PendingMigration?>(pendingMigrationProvider, (_, pending) {
+      if (pending != null) _showMigrationDialog(pending.count);
+    });
+
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
 
-      // AppBar
       appBar: AppBar(
-        title: Text(_screenTitle),
+        title: Text(_currentScreen.label),
         centerTitle: true,
         elevation: 0,
         backgroundColor: color.primary,
         foregroundColor: color.onPrimary,
+        actions: const [SyncStatusAction()],
       ),
 
-      // Drawer
       drawer: HomeDrawer(
         currentScreen: _currentScreen,
         onScreenSelected: _onScreenSelected,
-        onGoogleSignIn: _handleGoogleSignIn,
         onLoginSignup: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Email login coming soon.')),
-          );
+          Navigator.of(context).pop();
+          showAuthSheet(context);
         },
       ),
 
-      // FAB (Floating Action Button)
-      floatingActionButton:
-          (_currentScreen == AppScreen.dashboard ||
-              _currentScreen == AppScreen.entries)
+      floatingActionButton: _currentScreen.showFab
           ? FloatingActionButton(
               onPressed: () => entryEditorSheet(context, ref),
               backgroundColor: color.primary,
@@ -111,7 +72,43 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             )
           : null,
 
-      body: _buildBody(),
+      body: _currentScreen.buildBody(),
     );
+  }
+
+  /// Shows the anonymous-entry migration dialog
+  Future<void> _showMigrationDialog(int count) async {
+    // Clear the signal immediately so it doesn't re-trigger.
+    ref.read(pendingMigrationProvider.notifier).state = null;
+
+    final merge = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Local Entries Found'),
+        content: Text(
+          'You have $count local ${count == 1 ? 'entry' : 'entries'} '
+          'created before signing in.\n\n'
+          'Would you like to sync them to your account, '
+          'or discard them?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sync to Account'),
+          ),
+        ],
+      ),
+    );
+
+    if (merge == true) {
+      await HiveService.migrateAnonymousEntries();
+    } else {
+      await HiveService.discardAnonymousEntries();
+    }
   }
 }
