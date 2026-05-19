@@ -65,6 +65,47 @@ class FirebaseAuthService {
     return await _auth.createUserWithEmailAndPassword(email: email, password: password);
   }
 
+  // ── Password Management ───────────────────────────────────────────────────
+
+  static Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  static Future<void> updatePassword(String newPassword, {String? oldPassword}) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      if (oldPassword != null && user.email != null) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!, 
+          password: oldPassword,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+      await user.updatePassword(newPassword);
+    }
+  }
+
+  // ── Account Linking ───────────────────────────────────────────────────────
+
+  static Future<void> linkGoogleAccount() async {
+    final user = currentUser;
+    if (user == null) throw Exception('No user signed in');
+
+    await _ensureGoogleInitialized();
+    final googleUser = await GoogleSignIn.instance.authenticate();
+    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+    
+    if (googleAuth.idToken == null) {
+      throw StateError('Google Sign-In did not return an ID token.');
+    }
+
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+
+    await user.linkWithCredential(credential);
+  }
+
   // ── Sign Out ──────────────────────────────────────────────────────────────
 
   static Future<void> signOut() async {

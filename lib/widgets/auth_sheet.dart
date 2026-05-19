@@ -26,6 +26,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
   final _passwordController = TextEditingController();
 
   bool _isLogin = true;
+  bool _isResetPassword = false;
   bool _isEmailLoading = false;
   bool _isGoogleLoading = false;
   bool _obscurePassword = true;
@@ -38,6 +39,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
     super.dispose();
   }
 
+  // Submit form handler
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -61,29 +63,32 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
 
       if (!mounted) return;
       Navigator.pop(context); // Close sheet on success
-      
+
       // Success snackbar is fine here because the sheet is now closed!
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isLogin ? 'Successfully logged in.' : 'Account created.'),
+          content: Text(
+            _isLogin ? 'Successfully logged in.' : 'Account created.',
+          ),
         ),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
-      
+
       String msg = e.message ?? 'Authentication failed';
-      
+
       // Handle specific edge cases to improve UX
       if (e.code == 'email-already-in-use' && !_isLogin) {
-        msg = 'An account already exists for this email. Please sign in instead.';
+        msg =
+            'An account already exists for this email. Please sign in instead.';
         setState(() => _isLogin = true);
       } else if (e.code == 'user-not-found' && _isLogin) {
         msg = 'No account found for this email. Please sign up instead.';
         setState(() => _isLogin = false);
       } else if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-         msg = 'Incorrect email or password.';
+        msg = 'Incorrect email or password.';
       } else if (e.code == 'weak-password') {
-         msg = 'The password provided is too weak.';
+        msg = 'The password provided is too weak.';
       }
 
       setState(() => _errorMessage = msg);
@@ -95,6 +100,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
     }
   }
 
+  // Submit Google authentication handler
   Future<void> _submitGoogle() async {
     setState(() {
       _isGoogleLoading = true;
@@ -105,21 +111,55 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
       await FirebaseAuthService.signInWithGoogle();
       if (!mounted) return;
       Navigator.pop(context); // Close sheet on success
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Successfully signed in with Google.')),
       );
     } catch (e) {
       if (!mounted) return;
-      
+
       final errorStr = e.toString().toLowerCase();
       if (errorStr.contains('canceled') || errorStr.contains('aborted')) {
         return; // Silently ignore cancellation
       }
-      
+
       setState(() => _errorMessage = 'Google Sign-In failed: $e');
     } finally {
       if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
+  // Password reset handler
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'Enter a valid email address.');
+      return;
+    }
+
+    setState(() {
+      _isEmailLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await FirebaseAuthService.sendPasswordResetEmail(email);
+      if (!mounted) return;
+      setState(() => _isResetPassword = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset email sent to $email.'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = e.message ?? 'Failed to send reset email');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'An error occurred: $e');
+    } finally {
+      if (mounted) setState(() => _isEmailLoading = false);
     }
   }
 
@@ -156,168 +196,215 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
                 ),
               ),
               Text(
-              _isLogin ? 'Welcome Back' : 'Create Account',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _isLogin
-                  ? 'Sign in to securely sync your journal across devices.'
-                  : 'Sign up to securely backup your entries across devices.',
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            if (_errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
+                _isResetPassword
+                    ? 'Reset Password'
+                    : _isLogin
+                    ? 'Welcome Back'
+                    : 'Create Account',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: color.onErrorContainer),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(color: color.onErrorContainer),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _isResetPassword
+                    ? 'Enter your email to receive a password reset link.'
+                    : _isLogin
+                    ? 'Sign in to securely sync your journal across devices.'
+                    : 'Sign up to securely backup your entries across devices.',
+                style: Theme.of(context).textTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              if (_errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: color.onErrorContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(color: color.onErrorContainer),
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email Address',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: color.outlineVariant),
+                  ),
+                  filled: true,
+                  fillColor: color.surfaceContainerHighest.withValues(
+                    alpha: 0.3,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty || !value.contains('@')) {
+                    return 'Please enter a valid email';
+                  }
+                  return null;
+                },
+              ),
+              if (!_isResetPassword) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: color.outlineVariant),
+                    ),
+                    filled: true,
+                    fillColor: color.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty || value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
+                ),
+                if (_isLogin)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: isAnyLoading
+                          ? null
+                          : () => setState(() {
+                              _isResetPassword = true;
+                              _errorMessage = null;
+                            }),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Forgot Password?'),
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: isAnyLoading
+                    ? null
+                    : (_isResetPassword ? _resetPassword : _submit),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: _isEmailLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        _isResetPassword
+                            ? 'Send Reset Link'
+                            : _isLogin
+                            ? 'Sign In'
+                            : 'Sign Up',
+                      ),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: isAnyLoading
+                    ? null
+                    : () => setState(() {
+                        if (_isResetPassword) {
+                          _isResetPassword = false;
+                        } else {
+                          _isLogin = !_isLogin;
+                        }
+                        _errorMessage = null;
+                      }),
+                child: Text(
+                  _isResetPassword
+                      ? 'Back to Sign In'
+                      : _isLogin
+                      ? 'Don\'t have an account? Sign Up'
+                      : 'Already have an account? Sign In',
+                ),
+              ),
+              if (!_isResetPassword) ...[
+                const SizedBox(height: 4),
+                const Row(
+                  children: [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('OR', style: TextStyle(color: Colors.grey)),
+                    ),
+                    Expanded(child: Divider()),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email Address',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: color.outlineVariant,
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: isAnyLoading ? null : _submitGoogle,
+                  icon: _isGoogleLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : SvgPicture.asset(
+                          'assets/icons/google_logo.svg',
+                          height: 24,
+                          width: 24,
+                        ),
+                  label: const Text('Continue with Google'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
-                filled: true,
-                fillColor: color.surfaceContainerHighest.withValues(alpha: 0.3),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty || !value.contains('@')) {
-                  return 'Please enter a valid email';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: color.outlineVariant,
-                  ),
-                ),
-                filled: true,
-                fillColor: color.surfaceContainerHighest.withValues(alpha: 0.3),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty || value.length < 6) {
-                  return 'Password must be at least 6 characters';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: isAnyLoading ? null : _submit,
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: _isEmailLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Text(_isLogin ? 'Sign In' : 'Sign Up'),
-            ),
-            const SizedBox(height: 4),
-            TextButton(
-              onPressed: isAnyLoading
-                  ? null
-                  : () => setState(() => _isLogin = !_isLogin),
-              child: Text(
-                _isLogin
-                    ? 'Don\'t have an account? Sign Up'
-                    : 'Already have an account? Sign In',
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Row(
-              children: [
-                Expanded(child: Divider()),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('OR', style: TextStyle(color: Colors.grey)),
-                ),
-                Expanded(child: Divider()),
               ],
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: isAnyLoading ? null : _submitGoogle,
-              icon: _isGoogleLoading
-                  ? const SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : SvgPicture.asset(
-                      'assets/icons/google_logo.svg',
-                      height: 24,
-                      width: 24,
-                    ), 
-              label: const Text('Continue with Google'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                backgroundColor: Colors.white,
-                side: BorderSide(
-                  color: Colors.grey.shade300,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-      ), 
     );
   }
 }

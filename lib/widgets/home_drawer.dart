@@ -7,17 +7,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 class HomeDrawer extends StatelessWidget {
   final AppScreen currentScreen;
   final ValueChanged<AppScreen> onScreenSelected;
-  final VoidCallback onGoogleSignIn;
   final VoidCallback onLoginSignup;
-  final VoidCallback onLogout;
 
   const HomeDrawer({
     super.key,
     required this.currentScreen,
     required this.onScreenSelected,
-    required this.onGoogleSignIn,
     required this.onLoginSignup,
-    required this.onLogout,
   });
 
   @override
@@ -129,7 +125,21 @@ class HomeDrawer extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
-                          onPressed: onLogout,
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            try {
+                              await FirebaseAuthService.signOut();
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Logged out.')),
+                              );
+                            } catch (e) {
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Logout failed: $e')),
+                              );
+                            }
+                          },
                           icon: const Icon(Icons.logout),
                           label: const Text('Log Out'),
                         ),
@@ -147,13 +157,9 @@ class HomeDrawer extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       FilledButton.icon(
-                        onPressed: onGoogleSignIn,
-                        icon: const Icon(Icons.account_circle),
-                        label: const Text('Continue with Google'),
-                      ),
-                      TextButton(
                         onPressed: onLoginSignup,
-                        child: const Text('Login / Signup'),
+                        icon: const Icon(Icons.login),
+                        label: const Text('Sign In / Sign Up'),
                       ),
                     ],
                   );
