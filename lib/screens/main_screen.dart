@@ -1,7 +1,10 @@
 // lib/screens/main_screen.dart
 import 'package:dailylogr/utils/app_screens.dart';
 import 'package:dailylogr/providers/auth_lifecycle_provider.dart';
+import 'package:dailylogr/providers/journal_provider.dart';
+import 'package:dailylogr/screens/entries_screen.dart';
 import 'package:dailylogr/services/hive_service.dart';
+import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/widgets/auth_sheet.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/home_drawer.dart';
@@ -42,17 +45,69 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       if (pending != null) _showMigrationDialog(pending.count);
     });
 
+    final selectedEntries = _currentScreen == AppScreen.entries 
+        ? ref.watch(selectedEntriesProvider) 
+        : <String>{};
+
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
 
-      appBar: AppBar(
-        title: Text(_currentScreen.label),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: color.primary,
-        foregroundColor: color.onPrimary,
-        actions: const [SyncStatusAction()],
-      ),
+      appBar: selectedEntries.isNotEmpty
+          ? AppBar(
+              backgroundColor: color.surfaceContainerHighest,
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  ref.read(selectedEntriesProvider.notifier).state = {};
+                },
+              ),
+              title: Text('${selectedEntries.length} Selected'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete entries?'),
+                        content: Text('Delete ${selectedEntries.length} selected entries?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true && context.mounted) {
+                      final notifier = ref.read(journalProvider.notifier);
+                      final entries = ref.read(journalProvider);
+                      final entriesToDelete = entries.where(
+                        (entry) => selectedEntries.contains(DayKey.of(DayKey.normalize(entry.date)))
+                      ).toList();
+                      
+                      for (final e in entriesToDelete) {
+                        await notifier.deleteEntry(e);
+                      }
+                      ref.read(selectedEntriesProvider.notifier).state = {};
+                    }
+                  },
+                ),
+              ],
+            )
+          : AppBar(
+              title: Text(_currentScreen.label),
+              centerTitle: true,
+              elevation: 0,
+              backgroundColor: color.primary,
+              foregroundColor: color.onPrimary,
+              actions: const [SyncStatusAction()],
+            ),
 
       drawer: HomeDrawer(
         currentScreen: _currentScreen,

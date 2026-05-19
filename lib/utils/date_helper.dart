@@ -4,9 +4,14 @@ class DayKey {
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  static const _fullMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  static const _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   /// Compact format (mmm dd)
   static String ofShort(DateTime d) => '${_months[d.month - 1]} ${d.day}';
+
+  /// Long format (Weekday, DD Month, YYYY)
+  static String ofLong(DateTime d) => '${_days[d.weekday - 1]}, ${d.day} ${_fullMonths[d.month - 1]}, ${d.year}';
 
   /// Strip time portion, keep only date
   static DateTime normalize(DateTime d) => DateTime(d.year, d.month, d.day);

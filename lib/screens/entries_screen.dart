@@ -1,6 +1,5 @@
 // lib/screens/entries_screen.dart
 import 'package:dailylogr/utils/date_helper.dart';
-import 'package:dailylogr/widgets/view_entry_sheet.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/widgets/empty_state.dart';
@@ -9,12 +8,15 @@ import 'package:dailylogr/widgets/entry_tile.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
 
+final selectedEntriesProvider = StateProvider<Set<String>>((ref) => {});
+
 class EntriesScreen extends ConsumerWidget {
   const EntriesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(journalProvider);
+    final selectedEntries = ref.watch(selectedEntriesProvider);
 
     if (entries.isEmpty) {
       return const EmptyState();
@@ -29,50 +31,33 @@ class EntriesScreen extends ConsumerWidget {
             separatorBuilder: (context, _) => const SizedBox(height: 8),
             itemBuilder: (context, i) {
               final e = entries[i];
+              final id = DayKey.of(DayKey.normalize(e.date));
+              final isSelected = selectedEntries.contains(id);
 
               return EntryTile(
-                key: ValueKey(DayKey.of(DayKey.normalize(e.date))),
+                key: ValueKey(id),
                 entry: e,
-                onTap: () async {
-                  // Show detail sheet
-                  final action = await showModalBottomSheet<String>(
-                    context: context,
-                    isScrollControlled: true,
-                    builder: (_) => ViewEntrySheet(entry: e),
-                  );
-
-                  if (!context.mounted) return;
-
-                  // Handle edit action
-                  if (action == 'edit') {
-                    await entryEditorSheet(context, ref, initial: e);
-                  }
-                  // Handle delete action
-                  else if (action == 'delete') {
-                    final key = DayKey.of(DayKey.normalize(e.date));
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Delete entry?'),
-                        content: Text('Delete $key?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Delete'),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (!context.mounted) return;
-
-                    if (confirm == true) {
-                      await ref.read(journalProvider.notifier).deleteEntry(e);
+                isSelected: isSelected,
+                onTap: () {
+                  if (selectedEntries.isNotEmpty) {
+                    // Selection mode active
+                    final notifier = ref.read(selectedEntriesProvider.notifier);
+                    if (isSelected) {
+                      notifier.state = {...selectedEntries}..remove(id);
+                    } else {
+                      notifier.state = {...selectedEntries, id};
                     }
+                  } else {
+                    // Normal mode - edit
+                    entryEditorSheet(context, ref, initial: e);
+                  }
+                },
+                onLongPress: () {
+                  final notifier = ref.read(selectedEntriesProvider.notifier);
+                  if (isSelected) {
+                    notifier.state = {...selectedEntries}..remove(id);
+                  } else {
+                    notifier.state = {...selectedEntries, id};
                   }
                 },
               );
