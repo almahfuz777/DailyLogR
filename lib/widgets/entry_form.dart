@@ -7,12 +7,14 @@ class EntryForm extends StatefulWidget {
   final JournalEntry? initial;
   final DateTime? initialDate;
   final VoidCallback? onDelete;
+  final bool readOnly;
 
   const EntryForm({
     super.key,
     this.initial,
     this.initialDate,
     this.onDelete,
+    this.readOnly = false,
   });
 
   @override
@@ -316,14 +318,15 @@ class _EntryFormState extends State<EntryForm> {
               IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => Navigator.pop(context),
-                tooltip: 'Discard',
+                tooltip: widget.readOnly ? 'Close' : 'Discard',
               ),
               const Spacer(),
-              FilledButton.tonalIcon(
-                onPressed: _save,
-                icon: const Icon(Icons.check, size: 18),
-                label: const Text('Save'),
-              ),
+              if (!widget.readOnly)
+                FilledButton.tonalIcon(
+                  onPressed: _save,
+                  icon: const Icon(Icons.check, size: 18),
+                  label: const Text('Save'),
+                ),
             ],
           ),
         ),
@@ -340,6 +343,7 @@ class _EntryFormState extends State<EntryForm> {
                 children: [
                   TextField(
                     controller: _titleCtrl,
+                    readOnly: widget.readOnly,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -355,6 +359,7 @@ class _EntryFormState extends State<EntryForm> {
                     child: TextField(
                       controller: _noteCtrl,
                       focusNode: _noteFocus,
+                      readOnly: widget.readOnly,
                       expands: true,
                       minLines: null,
                       maxLines: null,
@@ -398,7 +403,7 @@ class _EntryFormState extends State<EntryForm> {
                     children: [
                       // Date
                       InkWell(
-                        onTap: _pickDate,
+                        onTap: widget.readOnly ? null : _pickDate,
                         borderRadius: BorderRadius.circular(16),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -430,7 +435,7 @@ class _EntryFormState extends State<EntryForm> {
 
                       // Mood
                       InkWell(
-                        onTap: _showMoodPicker,
+                        onTap: widget.readOnly ? null : _showMoodPicker,
                         borderRadius: BorderRadius.circular(16),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -455,7 +460,7 @@ class _EntryFormState extends State<EntryForm> {
 
                       // Rating stars
                       InkWell(
-                        onTap: _showRatingPicker,
+                        onTap: widget.readOnly ? null : _showRatingPicker,
                         borderRadius: BorderRadius.circular(16),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -480,7 +485,7 @@ class _EntryFormState extends State<EntryForm> {
                     ],
                   ),
                 ),
-                if (widget.initial != null)
+                if (widget.initial != null && !widget.readOnly)
                   Positioned(
                     right: 8,
                     top: 0,

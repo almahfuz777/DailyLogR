@@ -20,18 +20,10 @@ Future<void> entryEditorSheet(
       ? null
       : DayKey.normalize(initialDate);
 
-  // Guard: enforce the 4-day edit window *before* any async gap.
-  if (isEdit && !DayKey.isWithinEditWindow(initial.date)) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('You can only edit entries from the last 4 days.'),
-        behavior: SnackBarBehavior.floating,
-        margin: EdgeInsets.all(12),
-      ),
-    );
-    return;
-  }
+  // If editing an entry outside the edit window, open in readOnly mode.
+  final isReadOnly = isEdit && !DayKey.isWithinEditWindow(initial.date);
 
+  // Guard: enforce the 4-day edit window for CREATING new entries.
   if (!isEdit &&
       normalizedInitialDate != null &&
       !DayKey.isWithinEditWindow(normalizedInitialDate)) {
@@ -47,6 +39,18 @@ Future<void> entryEditorSheet(
     return;
   }
 
+  // If opening in read-only mode, optionally show a toast to inform the user
+  if (isReadOnly) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Viewing in read-only mode (older than 4 days).'),
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.all(12),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   final updatedEntry = await showModalBottomSheet<JournalEntry>(
     context: context,
     isScrollControlled: true,
@@ -57,6 +61,7 @@ Future<void> entryEditorSheet(
       body: EntryForm(
         initial: initial,
         initialDate: normalizedInitialDate,
+        readOnly: isReadOnly,
         onDelete: () {
           if (initial != null) {
             ref.read(journalProvider.notifier).deleteEntry(initial);
