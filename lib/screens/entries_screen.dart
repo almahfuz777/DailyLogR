@@ -88,10 +88,7 @@ class EntriesScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.push(
                 context, 
-                MaterialPageRoute(builder: (_) => Scaffold(
-                  appBar: AppBar(title: const Text('Recently Deleted')),
-                  body: const TrashScreen(),
-                )),
+                MaterialPageRoute(builder: (_) => const TrashScreen()),
               );
             },
           ),

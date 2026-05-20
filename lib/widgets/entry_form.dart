@@ -390,117 +390,126 @@ class _EntryFormState extends State<EntryForm> {
           ),
           child: SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                children: [
-                  // Date
-                  InkWell(
-                    onTap: _pickDate,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.calendar_today_outlined,
-                            size: 18,
-                            color: color.onSurfaceVariant,
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 48, 14),
+                  child: Row(
+                    children: [
+                      // Date
+                      InkWell(
+                        onTap: _pickDate,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            DayKey.ofShort(_date),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                size: 18,
+                                color: color.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                DayKey.ofShort(_date),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: color.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Mood
+                      InkWell(
+                        onTap: _showMoodPicker,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          child: Text(
+                            _adjective ?? '😊 Mood',
                             style: TextStyle(
                               fontSize: 14,
-                              color: color.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
+                              color: _adjective != null
+                                  ? color.onSurface
+                                  : color.onSurfaceVariant,
+                              fontWeight: _adjective != null
+                                  ? FontWeight.w500
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Rating stars
+                      InkWell(
+                        onTap: _showRatingPicker,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(5, (i) {
+                              final filled = (_rating ?? 0) >= i + 1;
+                              return Icon(
+                                filled
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                size: 22,
+                                color: filled ? Colors.amber : color.outlineVariant,
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (widget.initial != null)
+                  Positioned(
+                    right: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert),
+                        tooltip: 'More options',
+                        onSelected: (value) {
+                          if (value == 'delete') {
+                            _confirmDelete();
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Delete', style: TextStyle(color: Colors.red)),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-
-                  // Mood
-                  InkWell(
-                    onTap: _showMoodPicker,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(
-                        _adjective ?? '😊 Mood',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: _adjective != null
-                              ? color.onSurface
-                              : color.onSurfaceVariant,
-                          fontWeight: _adjective != null
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Rating stars
-                  InkWell(
-                    onTap: _showRatingPicker,
-                    borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(5, (i) {
-                          final filled = (_rating ?? 0) >= i + 1;
-                          return Icon(
-                            filled
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 22,
-                            color: filled ? Colors.amber : color.outlineVariant,
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
-                  if (widget.initial != null) ...[
-                    const Spacer(),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert),
-                      tooltip: 'More options',
-                      onSelected: (value) {
-                        if (value == 'delete') {
-                          _confirmDelete();
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text('Delete', style: TextStyle(color: Colors.red)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+              ],
             ),
           ),
         ),
