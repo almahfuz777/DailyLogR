@@ -11,8 +11,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  final DashboardEntryCarouselController _carouselController = 
+      DashboardEntryCarouselController();
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -22,7 +30,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final entries = ref.watch(journalProvider);
     final streak = ref.watch(streakProvider);
     final carouselItems = DashboardCarouselItems.fromEntries(entries);
@@ -77,7 +85,26 @@ class DashboardScreen extends ConsumerWidget {
             ),
 
             // Activity calendar strip
-            ActivityCalendarStrip(entries: entries),
+            ActivityCalendarStrip(
+              entries: entries,
+              onDateTapped: (date) {
+                final dateKey = DayKey.of(DayKey.normalize(date));
+                final index = carouselItems.indexWhere(
+                    (item) => DayKey.of(item.date) == dateKey);
+
+                if (index != -1) {
+                  _carouselController.animateToPage(index);
+                } else if (!DayKey.isWithinEditWindow(date)) {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('No entry for this day'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
             
             StreakSummaryCard(streak: streak),
             const SizedBox(height: 4),  // Spacing
@@ -87,6 +114,7 @@ class DashboardScreen extends ConsumerWidget {
               height: carouselHeight,
               child: DashboardEntryCarousel(
                 items: carouselItems,
+                controller: _carouselController,
                 onCardTap: (item) {
                   if (item.entry != null) {
                     entryEditorSheet(context, ref, initial: item.entry);

@@ -10,8 +10,13 @@ import 'package:flutter/material.dart';
 /// The month/year label updates based on the center-visible date.
 class ActivityCalendarStrip extends StatefulWidget {
   final List<JournalEntry> entries;
+  final void Function(DateTime)? onDateTapped;
 
-  const ActivityCalendarStrip({super.key, required this.entries});
+  const ActivityCalendarStrip({
+    super.key,
+    required this.entries,
+    this.onDateTapped,
+  });
 
   @override
   State<ActivityCalendarStrip> createState() => _ActivityCalendarStripState();
@@ -134,11 +139,14 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
                 final hasEntry = _entryKeys.contains(key);
                 final isToday = date == _today;
 
-                return _DateBox(
-                  day: date.day,
-                  hasEntry: hasEntry,
-                  isToday: isToday,
-                  size: _boxSize,
+                return GestureDetector(
+                  onTap: () => widget.onDateTapped?.call(date),
+                  child: _DateBox(
+                    day: date.day,
+                    hasEntry: hasEntry,
+                    isToday: isToday,
+                    size: _boxSize,
+                  ),
                 );
               },
             ),

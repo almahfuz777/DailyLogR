@@ -55,14 +55,32 @@ class DashboardCarouselItems {
   }
 }
 
+class DashboardEntryCarouselController {
+  void Function(int)? _animateToPage;
+
+  void animateToPage(int index) {
+    _animateToPage?.call(index);
+  }
+
+  void _attach(void Function(int) animateToPage) {
+    _animateToPage = animateToPage;
+  }
+
+  void _detach() {
+    _animateToPage = null;
+  }
+}
+
 /// A layered card carousel with depth/scale effects. Adjacent cards are partially visible, scaled down, and faded to create a clear "swipeable deck" visual.
 class DashboardEntryCarousel extends StatefulWidget {
   final List<CarouselItem> items;
+  final DashboardEntryCarouselController? controller;
   final void Function(CarouselItem item) onCardTap;
 
   const DashboardEntryCarousel({
     super.key,
     required this.items,
+    this.controller,
     required this.onCardTap,
   });
 
@@ -80,10 +98,20 @@ class _DashboardEntryCarouselState extends State<DashboardEntryCarousel> {
     super.initState();
     _controller = PageController(viewportFraction: _viewportFraction);
     _controller.addListener(_onScroll);
+    widget.controller?._attach((index) {
+      if (_controller.hasClients) {
+        _controller.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
   }
 
   @override
   void dispose() {
+    widget.controller?._detach();
     _controller.removeListener(_onScroll);
     _controller.dispose();
     super.dispose();
@@ -96,11 +124,15 @@ class _DashboardEntryCarouselState extends State<DashboardEntryCarousel> {
   }
 
   void _goToToday() {
-    _controller.animateToPage(
-      0,
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
+    if (widget.controller != null) {
+      widget.controller!.animateToPage(0);
+    } else {
+      _controller.animateToPage(
+        0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   @override
@@ -470,7 +502,7 @@ class _TodayPromptCard extends StatelessWidget {
                   SizedBox(height: isCompact ? 4 : 8),
                   Flexible(
                     child: Text(
-                      'Tap to capture your thoughts',
+                      "Write today's entry to keep your streak alive.",
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
@@ -507,6 +539,13 @@ class _EmptyDayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = theme.colorScheme;
+    
+    final today = DayKey.normalize(DateTime.now());
+    final isYesterday = date == today.subtract(const Duration(days: 1));
+    final title = isYesterday ? 'Catch up on yesterday' : 'Fill in this day';
+    final subtitle = isYesterday 
+        ? 'You can still log it and protect your streak.' 
+        : 'Add a quick note while this date is still editable.';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -549,7 +588,7 @@ class _EmptyDayCard extends StatelessWidget {
                   ),
                   SizedBox(height: isCompact ? 10 : 16),
                   Text(
-                    'No entry yet',
+                    title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -560,7 +599,7 @@ class _EmptyDayCard extends StatelessWidget {
                   SizedBox(height: isCompact ? 4 : 8),
                   Flexible(
                     child: Text(
-                      'Add an entry while this day is still editable.',
+                      subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
