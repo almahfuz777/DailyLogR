@@ -15,17 +15,17 @@ class StreakSummaryCard extends StatelessWidget {
     final isActive = streak.currentStreak > 0;
 
     final title = isActive
-        ? '${streak.currentStreak} ${streak.currentStreak == 1 ? 'day' : 'days'} streak${streak.isAtRisk ? ' – at risk' : ''}'
+        ? '${streak.currentStreak} ${streak.currentStreak == 1 ? 'day' : 'days'} streak${streak.isAtRisk ? ' – at risk' : '! Keep Going...'}'
         : 'Start your streak — log today!';
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 12, 20, 18),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: streak.isAtRisk
             ? color.tertiaryContainer.withValues(alpha: 0.75)
             : color.secondaryContainer.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: streak.isAtRisk
               ? color.tertiary.withValues(alpha: 0.16)

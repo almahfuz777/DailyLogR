@@ -2,6 +2,7 @@
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/providers/streak_provider.dart';
+import 'package:dailylogr/widgets/activity_calendar_strip.dart';
 import 'package:dailylogr/widgets/dashboard_entry_carousel.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/streak_summary_card.dart';
@@ -74,9 +75,12 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
+            // Activity calendar strip
+            ActivityCalendarStrip(entries: entries),
             
             StreakSummaryCard(streak: streak),
-            const SizedBox(height: 12), // Spacing between streak card and carousel
+            const SizedBox(height: 4),  // Spacing
 
             // Carousel
             SizedBox(
