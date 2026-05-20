@@ -284,6 +284,12 @@ class _JournalCard extends StatelessWidget {
           shadowColor: color.shadow.withValues(alpha: 0.25),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: isToday
+                  ? color.primary.withValues(alpha: 0.24)
+                  : color.outlineVariant.withValues(alpha: 0.6),
+              width: isToday ? 1.5 : 1.0,
+            ),
           ),
           color: isToday ? color.primaryContainer : color.surfaceContainerLow,
           clipBehavior: Clip.antiAlias,
@@ -419,6 +425,10 @@ class _TodayPromptCard extends StatelessWidget {
           shadowColor: color.shadow.withValues(alpha: 0.25),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: color.primary.withValues(alpha: 0.28),
+              width: 1.5,
+            ),
           ),
           color: color.primaryContainer,
           clipBehavior: Clip.antiAlias,
@@ -507,6 +517,10 @@ class _EmptyDayCard extends StatelessWidget {
           shadowColor: color.shadow.withValues(alpha: 0.14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
+            side: BorderSide(
+              color: color.outlineVariant.withValues(alpha: 0.6),
+              width: 1.0,
+            ),
           ),
           color: color.surfaceContainerLow,
           clipBehavior: Clip.antiAlias,
