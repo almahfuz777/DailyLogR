@@ -4,6 +4,7 @@ import 'package:dailylogr/firebase_options.dart';
 import 'services/hive_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dailylogr/services/notification_service.dart';
 
 void main() async {
   // Firebase initialization
@@ -12,6 +13,9 @@ void main() async {
 
   // Hive initialization
   await HiveService.init();
+
+  // Notification initialization
+  await NotificationService().init();
 
   // Run the app
   runApp(

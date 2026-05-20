@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:dailylogr/services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -214,6 +215,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
         children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Notifications',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+          ),
+          
+          FutureBuilder<bool>(
+            future: NotificationService().isDailyRemindersEnabled(),
+            builder: (context, snapshot) {
+              final isEnabled = snapshot.data ?? false;
+              return Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(Icons.notifications_active_outlined),
+                    title: const Text('Get Daily Reminders'),
+                    subtitle: const Text('Gentle reminders to log your day in your journal.'),
+                    value: isEnabled,
+                    onChanged: (bool value) async {
+                      await NotificationService().setDailyRemindersEnabled(value);
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  // Test notifications (removed for now)
+                  // if (isEnabled)
+                  //   ListTile(
+                  //     leading: const Icon(Icons.bug_report_outlined),
+                  //     title: const Text('Send Test Notification'),
+                  //     subtitle: const Text('Test if local notifications work on this device.'),
+                  //     trailing: const Icon(Icons.chevron_right),
+                  //     onTap: () async {
+                  //       await NotificationService().showTestNotification();
+                  //     },
+                  //   ),
+                ],
+              );
+            },
+          ),
+          
+          const Divider(),
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
