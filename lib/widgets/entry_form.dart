@@ -6,8 +6,14 @@ import 'package:dailylogr/models/journal_entry.dart';
 class EntryForm extends StatefulWidget {
   final JournalEntry? initial;
   final DateTime? initialDate;
+  final VoidCallback? onDelete;
 
-  const EntryForm({super.key, this.initial, this.initialDate});
+  const EntryForm({
+    super.key,
+    this.initial,
+    this.initialDate,
+    this.onDelete,
+  });
 
   @override
   State<EntryForm> createState() => _EntryFormState();
@@ -123,6 +129,39 @@ class _EntryFormState extends State<EntryForm> {
     );
 
     Navigator.pop(context, entry);
+  }
+
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final color = Theme.of(ctx).colorScheme;
+        return AlertDialog(
+          title: const Text('Delete entry?'),
+          content: const Text(
+            'Are you sure you want to delete this journal entry?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: color.error,
+                foregroundColor: color.onError,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      widget.onDelete?.call();
+    }
   }
 
   void _showMoodPicker() {
@@ -436,6 +475,30 @@ class _EntryFormState extends State<EntryForm> {
                       ),
                     ),
                   ),
+                  if (widget.initial != null) ...[
+                    const Spacer(),
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
+                      tooltip: 'More options',
+                      onSelected: (value) {
+                        if (value == 'delete') {
+                          _confirmDelete();
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

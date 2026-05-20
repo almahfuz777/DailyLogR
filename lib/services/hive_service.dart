@@ -106,7 +106,10 @@ class HiveService {
     final key = DayKey.of(normalizedDate);
 
     if (_box().containsKey(key)) {
-      throw JournalEntryConflictException(key);
+      final existing = _box().get(key);
+      if (existing != null && !existing.isDeleted) {
+        throw JournalEntryConflictException(key);
+      }
     }
 
     final toStore = entry.copyWith(
@@ -128,7 +131,10 @@ class HiveService {
     final newKey = DayKey.of(normalizedNewDate);
 
     if (oldKey != newKey && box.containsKey(newKey)) {
-      throw JournalEntryConflictException(newKey);
+      final existing = box.get(newKey);
+      if (existing != null && !existing.isDeleted) {
+        throw JournalEntryConflictException(newKey);
+      }
     }
 
     final toStore = newEntry.copyWith(

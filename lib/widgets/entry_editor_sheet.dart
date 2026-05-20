@@ -54,7 +54,16 @@ Future<void> entryEditorSheet(
     backgroundColor: Colors.transparent,
     builder: (ctx) => Scaffold(
       backgroundColor: Theme.of(ctx).colorScheme.surface,
-      body: EntryForm(initial: initial, initialDate: normalizedInitialDate),
+      body: EntryForm(
+        initial: initial,
+        initialDate: normalizedInitialDate,
+        onDelete: () {
+          if (initial != null) {
+            ref.read(journalProvider.notifier).deleteEntry(initial);
+          }
+          Navigator.pop(ctx); // Close the sheet modal immediately!
+        },
+      ),
     ),
   );
 
