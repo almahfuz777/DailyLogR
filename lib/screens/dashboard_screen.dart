@@ -1,8 +1,10 @@
 // lib/screens/dashboard_screen.dart
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
+import 'package:dailylogr/providers/streak_provider.dart';
 import 'package:dailylogr/widgets/dashboard_entry_carousel.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
+import 'package:dailylogr/widgets/streak_summary_card.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +23,7 @@ class DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(journalProvider);
+    final streak = ref.watch(streakProvider);
     final carouselItems = DashboardCarouselItems.fromEntries(entries);
     final screenHeight = MediaQuery.sizeOf(context).height;
     final carouselHeight = (screenHeight * 0.48).clamp(340.0, 430.0);
@@ -40,11 +43,12 @@ class DashboardScreen extends ConsumerWidget {
         }
 
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Personalized Greeting
             Padding(
               padding: const EdgeInsets.only(
-                bottom: 8,
+                bottom: 6,
                 left: 20,
                 right: 20,
                 top: 24,
@@ -70,6 +74,9 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            
+            StreakSummaryCard(streak: streak),
+            const SizedBox(height: 12), // Spacing between streak card and carousel
 
             // Carousel
             SizedBox(
