@@ -258,10 +258,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: const Text('Gentle reminders to log your day in your journal.'),
                   value: _isNotificationsEnabled,
                   onChanged: (bool value) async {
+                    // Optimistically update UI
                     setState(() {
                       _isNotificationsEnabled = value;
                     });
+                    
+                    // Attempt to set it (which requests permissions if enabling)
                     await NotificationService().setDailyRemindersEnabled(value);
+                    
+                    // Re-sync with actual state (in case permission was denied)
+                    final actuallyEnabled = await NotificationService().isDailyRemindersEnabled();
+                    if (mounted && actuallyEnabled != _isNotificationsEnabled) {
+                      setState(() {
+                        _isNotificationsEnabled = actuallyEnabled;
+                      });
+                    }
                   },
                 ),
               ],
