@@ -43,18 +43,11 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
     _today = DayKey.normalize(DateTime.now());
     _dates = List.generate(
       _historyDays + 1, // today + 90 past days
-      (i) => _today.subtract(Duration(days: _historyDays - i)),
+      (i) => _today.subtract(Duration(days: i)),
     );
     _entryKeys = _buildEntryKeys(widget.entries);
     _scrollController = ScrollController()..addListener(_onScroll);
     _visibleLabel = _formatLabel(_today);
-
-    // Scroll to today (rightmost end) on first frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    });
   }
 
   @override
@@ -132,6 +125,7 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
             child: ListView.separated(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
+              reverse: true,
               itemCount: _dates.length,
               separatorBuilder: (_, __) =>
                   const SizedBox(width: _boxSpacing),
