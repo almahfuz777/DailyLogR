@@ -13,6 +13,7 @@ android {
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "28.2.13676358"
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true   // lets app user java 11 features on older android versions
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -30,6 +31,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true  // Allows the app to exceed Android’s old 65K method limit
     }
 
     buildTypes {
@@ -57,4 +59,6 @@ dependencies {
 
   // Add the dependencies for any other desired Firebase products
   // https://firebase.google.com/docs/android/setup#available-libraries
+  
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")   // Required for Java 11 features
 }

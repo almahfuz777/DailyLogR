@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/services/sync_service.dart';
+import 'package:dailylogr/services/notification_service.dart';
 
 // Custom exception for entry conflicts (same date)
 class JournalEntryConflictException implements Exception {
@@ -120,6 +121,7 @@ class HiveService {
     await _box().put(key, toStore);
     // Sync to Cloud
     SyncService.pushEntry(toStore);
+    _checkAndCancelNotifications(toStore.date);
   }
 
   // Update (existing entry)
@@ -150,6 +152,7 @@ class HiveService {
     }
     await box.put(newKey, toStore);
     SyncService.pushEntry(toStore);
+    _checkAndCancelNotifications(toStore.date);
   }
 
   // Soft Delete
@@ -177,4 +180,20 @@ class HiveService {
 
   // Public accessor to the opened box
   static Box<JournalEntry> get journalBox => Hive.box<JournalEntry>(_activeBoxName);
+
+  static void _checkAndCancelNotifications(DateTime entryDate) {
+    final now = DateTime.now();
+    final isToday = entryDate.year == now.year &&
+        entryDate.month == now.month &&
+        entryDate.day == now.day;
+    
+    if (isToday) {
+      NotificationService().cancelRemindersForToday();
+    }
+    
+    final isClosingDay = DayKey.normalize(entryDate) == DayKey.normalize(now.subtract(const Duration(days: 3)));
+    if (isClosingDay) {
+      NotificationService().cancelClosingWindowWarning();
+    }
+  }
 }
