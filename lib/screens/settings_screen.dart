@@ -14,6 +14,24 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLinkingGoogle = false;
+  bool _isNotificationsEnabled = false;
+  bool _isLoadingNotifications = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationState();
+  }
+
+  Future<void> _loadNotificationState() async {
+    final isEnabled = await NotificationService().isDailyRemindersEnabled();
+    if (mounted) {
+      setState(() {
+        _isNotificationsEnabled = isEnabled;
+        _isLoadingNotifications = false;
+      });
+    }
+  }
 
   Future<void> _showChangePasswordDialog(BuildContext context, {required bool isNew}) async {
     final oldPasswordController = TextEditingController();
@@ -173,11 +191,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _linkGoogleAccount() async {
     setState(() => _isLinkingGoogle = true);
     try {
-      await FirebaseAuthService.linkGoogleAccount();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Successfully connected your Google account.')),
-      );
+      final user = FirebaseAuthService.currentUser;
+      if (user == null) {
+        await FirebaseAuthService.signInWithGoogle();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Successfully signed in with Google.')),
+        );
+      } else {
+        await FirebaseAuthService.linkGoogleAccount();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Successfully connected your Google account.')),
+        );
+      }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       
@@ -202,14 +229,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuthService.currentUser;
     
-    if (user == null) {
-      return const Center(
-        child: Text('Sign in to access settings.'),
-      );
-    }
-
-    final hasPasswordProvider = user.providerData.any((p) => p.providerId == 'password');
-    final hasGoogleProvider = user.providerData.any((p) => p.providerId == 'google.com');
+    final hasPasswordProvider = user?.providerData.any((p) => p.providerId == 'password') ?? false;
+    final hasGoogleProvider = user?.providerData.any((p) => p.providerId == 'google.com') ?? false;
     
     // Items for settings screen
     return ListView(
@@ -223,39 +244,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           
-          FutureBuilder<bool>(
-            future: NotificationService().isDailyRemindersEnabled(),
-            builder: (context, snapshot) {
-              final isEnabled = snapshot.data ?? false;
-              return Column(
-                children: [
-                  SwitchListTile(
-                    secondary: const Icon(Icons.notifications_active_outlined),
-                    title: const Text('Get Daily Reminders'),
-                    subtitle: const Text('Gentle reminders to log your day in your journal.'),
-                    value: isEnabled,
-                    onChanged: (bool value) async {
-                      await NotificationService().setDailyRemindersEnabled(value);
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
-                  ),
-                  // Test notifications (removed for now)
-                  // if (isEnabled)
-                  //   ListTile(
-                  //     leading: const Icon(Icons.bug_report_outlined),
-                  //     title: const Text('Send Test Notification'),
-                  //     subtitle: const Text('Test if local notifications work on this device.'),
-                  //     trailing: const Icon(Icons.chevron_right),
-                  //     onTap: () async {
-                  //       await NotificationService().showTestNotification();
-                  //     },
-                  //   ),
-                ],
-              );
-            },
-          ),
+          if (_isLoadingNotifications)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            Column(
+              children: [
+                SwitchListTile(
+                  secondary: const Icon(Icons.notifications_active_outlined),
+                  title: const Text('Get Daily Reminders'),
+                  subtitle: const Text('Gentle reminders to log your day in your journal.'),
+                  value: _isNotificationsEnabled,
+                  onChanged: (bool value) async {
+                    setState(() {
+                      _isNotificationsEnabled = value;
+                    });
+                    await NotificationService().setDailyRemindersEnabled(value);
+                  },
+                ),
+              ],
+            ),
           
           const Divider(),
 
@@ -267,25 +277,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           
-          // Change password / Set new password
-          if (hasPasswordProvider)
-            // Change password for email/password users
-            ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: const Text('Change Password'),
-              subtitle: const Text('Update your account password'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showChangePasswordDialog(context, isNew: false),
-            )
-          else 
-            // Set password for existing google account users
-            ListTile(
-              leading: const Icon(Icons.password),
-              title: const Text('Set Password'),
-              subtitle: const Text('Enable Email/Password login for this account'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _showChangePasswordDialog(context, isNew: true),
-            ),
+          if (user != null)
+            // Change password / Set new password
+            if (hasPasswordProvider)
+              // Change password for email/password users
+              ListTile(
+                leading: const Icon(Icons.lock_outline),
+                title: const Text('Change Password'),
+                subtitle: const Text('Update your account password'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showChangePasswordDialog(context, isNew: false),
+              )
+            else 
+              // Set password for existing google account users
+              ListTile(
+                leading: const Icon(Icons.password),
+                title: const Text('Set Password'),
+                subtitle: const Text('Enable Email/Password login for this account'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showChangePasswordDialog(context, isNew: true),
+              ),
 
           // Connect Google account
           ListTile(
