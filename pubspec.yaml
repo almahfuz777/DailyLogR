@@ -53,6 +53,7 @@ dependencies:
   timezone: ^0.9.4
   permission_handler: ^11.3.1
   shared_preferences: ^2.2.3
+  fl_chart: ^0.68.0
   
 dev_dependencies:
   flutter_test:
