@@ -21,64 +21,82 @@ class HomeDrawer extends StatelessWidget {
     final color = Theme.of(context).colorScheme;
 
     return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header + Navigation
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  // Header
-                  DrawerHeader(
-                    decoration: BoxDecoration(
-                      color: color.primary,
-                    ),
-                    child: Align(
-                      alignment: Alignment.bottomLeft,
-                      child: Text(
+      child: Column(
+        children: [
+          // Header + Navigation
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                // Header
+                Container(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.of(context).padding.top + 24,
+                    bottom: 24,
+                    left: 24,
+                    right: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.surfaceContainerHighest,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/app_logo/app_logo.png',
+                          width: 64,
+                          height: 64,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
                         'DailyLogR',
                         style: TextStyle(
-                          color: color.onPrimary,
+                          color: color.onSurface,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-                  // Navigation screen options
-                  ListTile(
-                    leading: const Icon(Icons.dashboard_outlined),
-                    title: const Text('Dashboard'),
-                    selected: currentScreen == AppScreen.dashboard,
-                    onTap: () => onScreenSelected(AppScreen.dashboard),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.list_alt_outlined),
-                    title: const Text('All Entries'),
-                    selected: currentScreen == AppScreen.entries,
-                    onTap: () => onScreenSelected(AppScreen.entries),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.insights_outlined),
-                    title: const Text('Analytics'),
-                    selected: currentScreen == AppScreen.analytics,
-                    onTap: () => onScreenSelected(AppScreen.analytics),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.settings_outlined),
-                    title: const Text('Settings'),
-                    selected: currentScreen == AppScreen.settings,
-                    onTap: () => onScreenSelected(AppScreen.settings),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                // Navigation screen options
+                ListTile(
+                  leading: const Icon(Icons.dashboard_outlined),
+                  title: const Text('Dashboard'),
+                  selected: currentScreen == AppScreen.dashboard,
+                  onTap: () => onScreenSelected(AppScreen.dashboard),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.list_alt_outlined),
+                  title: const Text('All Entries'),
+                  selected: currentScreen == AppScreen.entries,
+                  onTap: () => onScreenSelected(AppScreen.entries),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.insights_outlined),
+                  title: const Text('Analytics'),
+                  selected: currentScreen == AppScreen.analytics,
+                  onTap: () => onScreenSelected(AppScreen.analytics),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: const Text('Settings'),
+                  selected: currentScreen == AppScreen.settings,
+                  onTap: () => onScreenSelected(AppScreen.settings),
+                ),
+              ],
             ),
+          ),
 
-
-            // Footer
-            const Divider(),
-            Padding(
+          // Footer
+          const Divider(),
+          SafeArea(
+            top: false,
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
               child: StreamBuilder<User?>(
                 stream: FirebaseAuthService.authStateChanges,
@@ -94,11 +112,11 @@ class HomeDrawer extends StatelessWidget {
                           children: [
                             CircleAvatar(
                               radius: 16,
-                              backgroundImage: user.photoURL != null 
-                                  ? NetworkImage(user.photoURL!) 
+                              backgroundImage: user.photoURL != null
+                                  ? NetworkImage(user.photoURL!)
                                   : null,
-                              child: user.photoURL == null 
-                                  ? const Icon(Icons.person, size: 16) 
+                              child: user.photoURL == null
+                                  ? const Icon(Icons.person, size: 20)
                                   : null,
                             ),
                             const SizedBox(width: 12),
@@ -106,42 +124,51 @@ class HomeDrawer extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (user.displayName != null)
+                                    Text(
+                                      user.displayName!,
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   Text(
-                                    user.displayName ?? 'Journaler',
-                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    user.email ?? '',
+                                    user.email ?? 'Journaler',
                                     style: Theme.of(context).textTheme.bodySmall,
-                                    maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
+                            IconButton(
+                              icon: const Icon(Icons.logout),
+                              tooltip: 'Sign Out',
+                              onPressed: () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('Sign Out'),
+                                    content: const Text(
+                                      'Are you sure you want to sign out?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(ctx).pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      FilledButton(
+                                        onPressed: () => Navigator.of(ctx).pop(true),
+                                        child: const Text('Sign Out'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed == true) {
+                                  await FirebaseAuthService.signOut();
+                                }
+                              },
+                            ),
                           ],
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            Navigator.of(context).pop();
-                            try {
-                              await FirebaseAuthService.signOut();
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Logged out.')),
-                              );
-                            } catch (e) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Logout failed: $e')),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.logout),
-                          label: const Text('Log Out'),
                         ),
                       ],
                     );
@@ -152,7 +179,8 @@ class HomeDrawer extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Sync your journal with the cloud',
+                        'Sign in to sync your journal with the cloud',
+                        textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelMedium,
                       ),
                       const SizedBox(height: 8),
@@ -166,8 +194,8 @@ class HomeDrawer extends StatelessWidget {
                 },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
