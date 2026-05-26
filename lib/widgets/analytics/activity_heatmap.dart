@@ -1,20 +1,23 @@
 // lib/widgets/activity_heatmap.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../models/journal_entry.dart';
 import '../../utils/date_helper.dart';
 
 class ActivityHeatmap extends StatelessWidget {
-  final Map<DateTime, double> ratingTrend;
+  final List<JournalEntry> entries;
 
   const ActivityHeatmap({
     super.key,
-    required this.ratingTrend,
+    required this.entries,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final now = DateTime.now();
+    
+    final entryDates = entries.map((e) => DayKey.normalize(e.date)).toSet();
     
     // Setup current month data
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
@@ -90,7 +93,7 @@ class ActivityHeatmap extends StatelessWidget {
               final date = DateTime(now.year, now.month, dayNumber);
               final normalizedDate = DayKey.normalize(date);
               
-              final hasEntry = ratingTrend.containsKey(normalizedDate);
+              final hasEntry = entryDates.contains(normalizedDate);
               final isToday = DayKey.normalize(now).isAtSameMomentAs(normalizedDate);
 
               return Tooltip(

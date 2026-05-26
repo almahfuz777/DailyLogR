@@ -142,29 +142,94 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     ),
                   ),
                 ] else ...[
-                  if (trendData.isNotEmpty) ...[
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  if (trendData.isNotEmpty)
                     RatingTrendChart(
                       title: 'Rating Trend',
                       trendData: trendData,
+                    )
+                  else
+                    _buildEmptyChartPlaceholder(
+                      context,
+                      title: 'Rating Trend',
+                      message: 'Not enough rating data available.\nAdd ratings to your entries to view rating trend.',
+                      icon: Icons.show_chart,
                     ),
-                  ],
-                  if (moodCounts.isNotEmpty) ...[
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  if (moodCounts.isNotEmpty)
                     MoodDistributionChart(
                       title: 'Mood Distribution',
                       moodCounts: moodCounts,
+                    )
+                  else
+                    _buildEmptyChartPlaceholder(
+                      context,
+                      title: 'Mood Distribution',
+                      message: 'Not enough mood data available.\n Add moods to your entries to view mood distribution.',
+                      icon: Icons.pie_chart_outline,
                     ),
-                  ],
                 ],
                 const SizedBox(height: 24),
                 ActivityHeatmap(
-                  ratingTrend: AnalyticsHelper.getRatingTrend(allEntries), // Always show all time for heatmap context
+                  entries: allEntries, // Always show all time for heatmap context
                 ),
                 const SizedBox(height: 100), // Bottom padding for scrolling
               ]),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyChartPlaceholder(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required IconData icon,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 40,
+                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
         ],
       ),
     );
