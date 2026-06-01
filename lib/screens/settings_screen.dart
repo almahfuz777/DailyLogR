@@ -4,15 +4,18 @@ import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:dailylogr/services/notification_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dailylogr/providers/version_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isLinkingGoogle = false;
   bool _isNotificationsEnabled = false;
   bool _isLoadingNotifications = true;
@@ -21,6 +24,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadNotificationState();
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the link.')),
+        );
+      }
+    }
   }
 
   Future<void> _loadNotificationState() async {
@@ -232,6 +248,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final hasPasswordProvider = user?.providerData.any((p) => p.providerId == 'password') ?? false;
     final hasGoogleProvider = user?.providerData.any((p) => p.providerId == 'google.com') ?? false;
     
+    // Watch dynamic version status
+    final versionState = ref.watch(appVersionProvider);
+
     // Items for settings screen
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -338,6 +357,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : const Icon(Icons.chevron_right),
             onTap: hasGoogleProvider || _isLinkingGoogle ? null : _linkGoogleAccount,
           ),
+
+          const Divider(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'App Information',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: const Text('Current Version', maxLines: 1),
+            subtitle: Text(versionState.currentVersion),
+            trailing: versionState.isChecking
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : TextButton.icon(
+                    onPressed: () => ref.read(appVersionProvider.notifier).checkForUpdates(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Check Updates'),
+                  ),
+          ),
+
+          if (versionState.statusMessage != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                decoration: BoxDecoration(
+                  color: versionState.apkDownloadUrl != null
+                      ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3)
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: versionState.apkDownloadUrl != null
+                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+                        : Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          versionState.apkDownloadUrl != null
+                              ? Icons.system_update_outlined
+                              : Icons.check_circle_outline,
+                          color: versionState.apkDownloadUrl != null
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.green,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            versionState.statusMessage!,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: versionState.apkDownloadUrl != null
+                                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                                  : Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (versionState.apkDownloadUrl != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () => _launchUrl(versionState.apkDownloadUrl!),
+                            icon: const Icon(Icons.download, size: 18),
+                            label: const Text('Update Now'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
         ],
     );
   }
