@@ -11,10 +11,12 @@ import 'package:flutter/material.dart';
 class ActivityCalendarStrip extends StatefulWidget {
   final List<JournalEntry> entries;
   final void Function(DateTime)? onDateTapped;
+  final DateTime selectedDate;
 
   const ActivityCalendarStrip({
     super.key,
     required this.entries,
+    required this.selectedDate,
     this.onDateTapped,
   });
 
@@ -41,18 +43,11 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
     _today = DayKey.normalize(DateTime.now());
     _dates = List.generate(
       _historyDays + 1, // today + 90 past days
-      (i) => _today.subtract(Duration(days: _historyDays - i)),
+      (i) => _today.subtract(Duration(days: i)),
     );
     _entryKeys = _buildEntryKeys(widget.entries);
     _scrollController = ScrollController()..addListener(_onScroll);
     _visibleLabel = _formatLabel(_today);
-
-    // Scroll to today (rightmost end) on first frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    });
   }
 
   @override
@@ -130,6 +125,7 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
             child: ListView.separated(
               controller: _scrollController,
               scrollDirection: Axis.horizontal,
+              reverse: true,
               itemCount: _dates.length,
               separatorBuilder: (_, __) =>
                   const SizedBox(width: _boxSpacing),
@@ -137,14 +133,14 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
                 final date = _dates[index];
                 final key = DayKey.of(date);
                 final hasEntry = _entryKeys.contains(key);
-                final isToday = date == _today;
+                final isSelected = date == widget.selectedDate;
 
                 return GestureDetector(
                   onTap: () => widget.onDateTapped?.call(date),
                   child: _DateBox(
                     day: date.day,
                     hasEntry: hasEntry,
-                    isToday: isToday,
+                    isSelected: isSelected,
                     size: _boxSize,
                   ),
                 );
@@ -160,13 +156,13 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
 class _DateBox extends StatelessWidget {
   final int day;
   final bool hasEntry;
-  final bool isToday;
+  final bool isSelected;
   final double size;
 
   const _DateBox({
     required this.day,
     required this.hasEntry,
-    required this.isToday,
+    required this.isSelected,
     required this.size,
   });
 
@@ -178,13 +174,13 @@ class _DateBox extends StatelessWidget {
         ? Colors.green.withValues(alpha: 0.55)
         : color.surfaceContainerHighest.withValues(alpha: 0.5);
 
-    final borderColor = isToday
+    final borderColor = isSelected
         ? color.primary
         : hasEntry
             ? Colors.green.withValues(alpha: 0.7)
             : color.outlineVariant.withValues(alpha: 0.5);
 
-    final borderWidth = isToday ? 2.0 : 1.0;
+    final borderWidth = isSelected ? 2.0 : 1.0;
 
     return Container(
       width: size,
@@ -198,7 +194,7 @@ class _DateBox extends StatelessWidget {
       child: Text(
         '$day',
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
           color: hasEntry
               ? Colors.green.shade900
               : color.onSurfaceVariant,

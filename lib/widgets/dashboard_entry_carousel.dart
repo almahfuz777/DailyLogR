@@ -76,12 +76,14 @@ class DashboardEntryCarousel extends StatefulWidget {
   final List<CarouselItem> items;
   final DashboardEntryCarouselController? controller;
   final void Function(CarouselItem item) onCardTap;
+  final void Function(int index)? onPageChanged;
 
   const DashboardEntryCarousel({
     super.key,
     required this.items,
     this.controller,
     required this.onCardTap,
+    this.onPageChanged,
   });
 
   @override
@@ -170,6 +172,7 @@ class _DashboardEntryCarouselState extends State<DashboardEntryCarousel> {
                 controller: _controller,
                 itemCount: widget.items.length,
                 reverse: true,
+                onPageChanged: widget.onPageChanged,
                 clipBehavior: Clip.none,
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) => AnimatedBuilder(

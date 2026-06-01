@@ -21,6 +21,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final DashboardEntryCarouselController _carouselController = 
       DashboardEntryCarouselController();
+  DateTime _selectedDate = DayKey.normalize(DateTime.now());
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -87,12 +88,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             // Activity calendar strip
             ActivityCalendarStrip(
               entries: entries,
+              selectedDate: _selectedDate,
               onDateTapped: (date) {
                 final dateKey = DayKey.of(DayKey.normalize(date));
                 final index = carouselItems.indexWhere(
                     (item) => DayKey.of(item.date) == dateKey);
 
                 if (index != -1) {
+                  setState(() => _selectedDate = date);
                   _carouselController.animateToPage(index);
                 } else if (!DayKey.isWithinEditWindow(date)) {
                   ScaffoldMessenger.of(context).clearSnackBars();
@@ -115,6 +118,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: DashboardEntryCarousel(
                 items: carouselItems,
                 controller: _carouselController,
+                onPageChanged: (index) {
+                  final date = carouselItems[index].date;
+                  if (_selectedDate != date) {
+                    setState(() => _selectedDate = date);
+                  }
+                },
                 onCardTap: (item) {
                   if (item.entry != null) {
                     entryEditorSheet(context, ref, initial: item.entry);
