@@ -6,6 +6,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:dailylogr/firebase_options.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+// Firebase background message handler
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint("Handling a background message: \${message.messageId}");
+}
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -42,11 +53,26 @@ class NotificationService {
       },
     );
     
+    // Request permissions for push notifications on app launch
+    await requestPermissions();
+
     // Automatically reschedule on init if enabled
     final isEnabled = await isDailyRemindersEnabled();
     if (isEnabled) {
       await scheduleDailyReminders();
     }
+    
+    // Subscribe to topic for broadcast messages
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic('all_users');
+    } catch (e) {
+      debugPrint("Failed to subscribe to all_users topic: \$e");
+    }
+
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      _showForegroundPushNotification(message);
+    });
     
     // Check for the closing window warning
     _checkAndScheduleClosingWarning();
@@ -90,18 +116,20 @@ class NotificationService {
   }
 
   Future<bool> requestPermissions() async {
-    bool? granted = await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-    
-    // For iOS
-    await _flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
+    // Firebase natively handles the OS prompt for both Android 13+ and iOS perfectly
+    NotificationSettings settings = await FirebaseMessaging.instance.requestPermission(
+      alert: true,
+      announcement: false,
+      badge: true,
+      carPlay: false,
+      criticalAlert: false,
+      provisional: false,
+      sound: true,
+    );
         
-    return granted ?? true;
+    // check permission_handler to return a boolean response
+    var status = await Permission.notification.status;
+    return status.isGranted || settings.authorizationStatus == AuthorizationStatus.authorized;
   }
 
   /// Cancels all notifications (when toggled off in settings)
@@ -271,5 +299,34 @@ class NotificationService {
     tz.TZDateTime scheduledDate =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     return scheduledDate;
+  }
+
+  Future<void> _showForegroundPushNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    final android = message.notification?.android;
+
+    if (notification != null) {
+      await _flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'push_messages',
+            'Push Messages',
+            channelDescription: 'Remote push notifications from the developer',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: android?.smallIcon ?? '@mipmap/launcher_icon',
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: message.data.toString(),
+      );
+    }
   }
 }

@@ -7,6 +7,7 @@ import 'package:dailylogr/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/providers/version_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -291,6 +292,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       setState(() {
                         _isNotificationsEnabled = actuallyEnabled;
                       });
+                      
+                      // If user tried to enable it, but it failed (likely permanently denied by OS)
+                      if (value == true && actuallyEnabled == false) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Notifications are blocked in device settings.'),
+                            persist: false,
+                            duration: const Duration(seconds: 4),
+                            action: SnackBarAction(
+                              label: 'Settings',
+                              onPressed: () => openAppSettings(),
+                            ),
+                          ),
+                        );
+                      }
                     }
                   },
                 ),
