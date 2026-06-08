@@ -45,6 +45,7 @@ dependencies:
   firebase_auth: ^6.1.2
   cloud_firestore: ^6.1.0
   google_sign_in: ^7.2.0
+  firebase_messaging: ^16.3.0
   
   # state management
   flutter_riverpod: ^2.6.1
