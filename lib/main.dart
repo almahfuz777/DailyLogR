@@ -18,10 +18,7 @@ void main() async {
   // Hive initialization
   await HiveService.init();
 
-  // Notification initialization
-  await NotificationService().init();
-
-  // Check onboarding status
+  // Check onboarding status for first time users
   final prefs = await SharedPreferences.getInstance();
   final showOnboarding = prefs.getBool('show_onboarding') ?? true;
 
@@ -31,6 +28,9 @@ void main() async {
       child: MyApp(showOnboarding: showOnboarding),
     ),
   );
+
+  // Notification service initialization
+  NotificationService().init();
 }
 
 class MyApp extends StatelessWidget {
@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
   
   const MyApp({super.key, required this.showOnboarding});
 
-  // This widget is the root of your application.
+  // Application Root Widget
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

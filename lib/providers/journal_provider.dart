@@ -7,7 +7,8 @@ import '../utils/date_helper.dart';
 class JournalNotifier extends Notifier<List<JournalEntry>> {
   @override
   List<JournalEntry> build() {
-    _purgeOldTrash(); // Auto cleanup on startup
+    // Schedule trash purge as a deferred microtask so build() stays synchronous to avoid ANRs on slower devices
+    Future.microtask(_purgeOldTrash);
     return _fetchSortedEntries();
   }
 
