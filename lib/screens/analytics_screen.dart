@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/journal_provider.dart';
 import '../providers/streak_provider.dart';
+import '../providers/settings_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/analytics_helper.dart';
 import '../widgets/analytics/summary_cards.dart';
@@ -26,23 +27,32 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final allEntries = ref.watch(journalProvider);
+    final settingsAsync = ref.watch(settingsProvider);
+    final firstDayOfWeek = settingsAsync.valueOrNull?.firstDayOfWeek ?? kDefaultFirstDayOfWeek;
 
     // Filter entries based on selection
     List<JournalEntry> filteredEntries;
     final now = DateTime.now();
 
+    // Calendar-accurate boundaries
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    // Days to subtract to reach the user's preferred first weekday
+    final daysSinceWeekStart = (now.weekday - firstDayOfWeek + 7) % 7;
+    final startOfWeek = startOfToday.subtract(Duration(days: daysSinceWeekStart));
+    final startOfMonth = DateTime(now.year, now.month, 1);
+
     switch (_selectedFilter) {
       case TimeFilter.week:
         filteredEntries = AnalyticsHelper.filterEntriesByDateRange(
           allEntries,
-          now.subtract(const Duration(days: 7)),
+          startOfWeek,
           now,
         );
         break;
       case TimeFilter.month:
         filteredEntries = AnalyticsHelper.filterEntriesByDateRange(
           allEntries,
-          now.subtract(const Duration(days: 30)),
+          startOfMonth,
           now,
         );
         break;

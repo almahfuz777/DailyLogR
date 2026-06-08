@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:dailylogr/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/providers/version_provider.dart';
+import 'package:dailylogr/providers/settings_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -38,6 +39,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     }
+  }
+
+  /// Shows a dialog for selecting the first day of the week.
+  Future<void> _showFirstDayOfWeekDialog(int currentDay) async {
+    // Dart weekday: Mon=1 ... Sat=6, Sun=7
+    const days = [
+      (label: 'Saturday', value: 6),
+      (label: 'Sunday', value: 7),
+      (label: 'Monday', value: 1),
+      (label: 'Friday', value: 5),
+    ];
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('First Day of Week'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        children: days.map((day) {
+          final isSelected = day.value == currentDay;
+          return SimpleDialogOption(
+            onPressed: () {
+              ref.read(settingsProvider.notifier).setFirstDayOfWeek(day.value);
+              Navigator.pop(ctx);
+            },
+            child: Row(
+              children: [
+                Expanded(child: Text(day.label)),
+                if (isSelected)
+                  Icon(Icons.check, color: Theme.of(context).colorScheme.primary),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 
   Future<void> _loadNotificationState() async {
@@ -256,6 +292,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
         children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'General',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+          ),
+
+          ref.watch(settingsProvider).when(
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (settings) {
+              const dayNames = {
+                1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
+                4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday',
+              };
+              return ListTile(
+                leading: const Icon(Icons.calendar_today_outlined),
+                title: const Text('First Day of Week'),
+                subtitle: Text(dayNames[settings.firstDayOfWeek] ?? 'Saturday'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showFirstDayOfWeekDialog(settings.firstDayOfWeek),
+              );
+            },
+          ),
+
+          const Divider(),
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
