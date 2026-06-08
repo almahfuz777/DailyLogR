@@ -1,6 +1,7 @@
 // lib/services/firebase_auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:dailylogr/services/sync_service.dart';
 
 /// Firebase Authentication.
 /// [Firebase.initializeApp()] has already been called in `main()`.
@@ -109,6 +110,12 @@ class FirebaseAuthService {
   // ── Sign Out ──────────────────────────────────────────────────────────────
 
   static Future<void> signOut() async {
+    // Push all local entries to cloud before signing out.
+    // If offline, this is silently skipped — Firestore's offline write queue will flush any pending writes when the device reconnects.
+    try {
+      await SyncService.pushAll();
+    } catch (_) {}
+
     await Future.wait([
       _auth.signOut(),
       if (_googleInitialized) GoogleSignIn.instance.signOut(),

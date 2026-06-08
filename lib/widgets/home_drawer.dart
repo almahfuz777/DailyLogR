@@ -1,10 +1,12 @@
 // lib/widgets/home_drawer.dart
 import 'package:dailylogr/utils/app_screens.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dailylogr/providers/sync_provider.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class HomeDrawer extends StatelessWidget {
+class HomeDrawer extends ConsumerWidget {
   final AppScreen currentScreen;
   final ValueChanged<AppScreen> onScreenSelected;
   final VoidCallback onLoginSignup;
@@ -17,8 +19,9 @@ class HomeDrawer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final color = Theme.of(context).colorScheme;
+    final syncStatus = ref.watch(syncStatusProvider);
 
     return Drawer(
       child: Column(
@@ -144,27 +147,62 @@ class HomeDrawer extends StatelessWidget {
                               icon: const Icon(Icons.logout),
                               tooltip: 'Sign Out',
                               onPressed: () async {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text('Sign Out'),
-                                    content: const Text(
-                                      'Are you sure you want to sign out?',
+                                final isOffline = syncStatus == SyncStatus.offline;
+
+                                if (isOffline) {
+                                  // Show offline warning first
+                                  final proceed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      icon: const Icon(Icons.wifi_off_rounded, size: 32),
+                                      title: const Text('You are offline'),
+                                      content: const Text(
+                                        'Local changes may not be synced to the cloud yet.\n\n'
+                                        'Log out anyway?',
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(ctx).pop(false),
+                                          child: const Text('Stay Signed In'),
+                                        ),
+                                        FilledButton(
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Theme.of(ctx).colorScheme.error,
+                                            foregroundColor: Theme.of(ctx).colorScheme.onError,
+                                          ),
+                                          onPressed: () => Navigator.of(ctx).pop(true),
+                                          child: const Text('Log Out Anyway'),
+                                        ),
+                                      ],
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.of(ctx).pop(false),
-                                        child: const Text('Cancel'),
+                                  );
+                                  if (proceed == true) {
+                                    await FirebaseAuthService.signOut();
+                                  }
+                                } else {
+                                  // Normal online confirmation
+                                  final confirmed = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('Sign Out'),
+                                      content: const Text(
+                                        'Are you sure you want to sign out?',
                                       ),
-                                      FilledButton(
-                                        onPressed: () => Navigator.of(ctx).pop(true),
-                                        child: const Text('Sign Out'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed == true) {
-                                  await FirebaseAuthService.signOut();
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(ctx).pop(false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () => Navigator.of(ctx).pop(true),
+                                          child: const Text('Sign Out'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirmed == true) {
+                                    await FirebaseAuthService.signOut();
+                                  }
                                 }
                               },
                             ),

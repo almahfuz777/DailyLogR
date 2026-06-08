@@ -74,17 +74,28 @@ class SyncStatusAction extends ConsumerWidget {
           icon: Icon(icon, color: color),
           tooltip: tooltip,
           onPressed: () async {
-             if (status == SyncStatus.syncing) return;
-             
-             try {
-                await ref.read(syncStatusProvider.notifier).sync();
-             } catch (e) {
-                if (context.mounted) {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Sync failed: $e')),
-                   );
-                }
-             }
+            if (status == SyncStatus.syncing) return;
+
+            if (status == SyncStatus.offline) {
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('You\'re offline — get back online to sync'),
+                  duration: Duration(seconds: 3),
+                ),
+              );
+              return;
+            }
+
+            try {
+              await ref.read(syncStatusProvider.notifier).sync();
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Sync failed: $e')),
+                );
+              }
+            }
           },
         );
       },

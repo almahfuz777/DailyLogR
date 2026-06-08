@@ -35,12 +35,13 @@ class SyncService {
     }, SetOptions(merge: true));
   }
 
-  /// Pulls all entries from Firestore and merges them with Hive using Last-Write-Wins.
+  /// Pulls all entries from Firestore and merges them into Hive using Last-Write-Wins.
+  /// Uses Firestore's default server-first behaviour: fetches fresh data from the server when online, falls back to cache only when offline
   static Future<void> pullSync() async {
     final ref = _userEntriesRef;
     if (ref == null) return;
 
-    final snapshot = await ref.get(const GetOptions(source: Source.serverAndCache));
+    final snapshot = await ref.get();
     final cloudKeys = <String>{};
     
     for (var doc in snapshot.docs) {
@@ -87,6 +88,17 @@ class SyncService {
           await pushEntry(localEntry);
         }
       }
+    }
+  }
+
+  /// Pushes every entry in the active Hive box to Firestore.
+  /// Called before sign-out to ensure local-only changes are not lost.
+  static Future<void> pushAll() async {
+    final ref = _userEntriesRef;
+    if (ref == null) return;
+
+    for (final entry in HiveService.journalBox.values) {
+      await pushEntry(entry);
     }
   }
 
