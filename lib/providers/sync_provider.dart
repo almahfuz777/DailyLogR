@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dailylogr/services/sync_service.dart';
@@ -5,18 +6,31 @@ import 'package:dailylogr/providers/journal_provider.dart';
 
 enum SyncStatus { synced, syncing, offline, error }
 
-class SyncStatusNotifier extends Notifier<SyncStatus> {
+class SyncStatusNotifier extends Notifier<SyncStatus> with WidgetsBindingObserver {
   @override
   SyncStatus build() {
+    WidgetsBinding.instance.addObserver(this);
+    ref.onDispose(() => WidgetsBinding.instance.removeObserver(this));
     _initConnectivity();
     return SyncStatus.offline;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+    // Sync on resume covers the multi-device case: if another device made changes while this app was backgrounded, they appear as soon as the user returns.
+    if (lifecycle == AppLifecycleState.resumed) {
+      _performAutoSync();
+    }
   }
 
   Future<void> _initConnectivity() async {
     final connectivityResults = await Connectivity().checkConnectivity();
     _updateStatusFromConnectivity(connectivityResults);
 
-    Connectivity().onConnectivityChanged.listen(_updateStatusFromConnectivity);
+    final subscription = Connectivity()
+        .onConnectivityChanged
+        .listen(_updateStatusFromConnectivity);
+    ref.onDispose(subscription.cancel);
   }
 
   void _updateStatusFromConnectivity(List<ConnectivityResult> results) {
@@ -38,8 +52,18 @@ class SyncStatusNotifier extends Notifier<SyncStatus> {
     }
   }
 
-  /// High-level synchronized pull/sync function. Sets state, calls SyncService.pullSync(), invalidates the journalProvider so the UI reflects the synced state immediately, and sets state to synced.
+  /// Pulls from Firestore and merges into Hive. Updates [SyncStatus] reactively.
+  /// Concurrent calls are de-duplicated: if a sync is already in progress, this is a no-op to avoid redundant server round-trips.
   Future<void> sync() async {
+    if (state == SyncStatus.syncing) return; // de-duplicate concurrent calls
+
+    // Check real connectivity before touching Firestore so it doesn't fall back to local cache
+    final results = await Connectivity().checkConnectivity();
+    if (results.every((r) => r == ConnectivityResult.none)) {
+      state = SyncStatus.offline;
+      return;
+    }
+
     state = SyncStatus.syncing;
     try {
       await SyncService.pullSync();

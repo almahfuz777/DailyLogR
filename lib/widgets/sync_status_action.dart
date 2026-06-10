@@ -5,6 +5,17 @@ import 'package:dailylogr/providers/sync_provider.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:dailylogr/widgets/auth_sheet.dart';
 
+/// Shows a consistent offline snackbar from any context.
+void _showOfflineSnackbar(BuildContext context) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('You\'re offline — get back online to sync'),
+      duration: Duration(seconds: 3),
+    ),
+  );
+}
+
 class SyncStatusAction extends ConsumerWidget {
   const SyncStatusAction({super.key});
 
@@ -14,11 +25,21 @@ class SyncStatusAction extends ConsumerWidget {
       stream: FirebaseAuthService.authStateChanges,
       builder: (context, snapshot) {
         final user = snapshot.data;
+        final status = ref.watch(syncStatusProvider);
+        final isOffline = status == SyncStatus.offline;
+
         if (user == null) {
           return IconButton(
-            icon: const Icon(Icons.cloud_off_outlined),
-            tooltip: 'Not synced',
+            icon: Icon(
+              Icons.cloud_off_outlined,
+              color: isOffline ? Colors.orange : null,
+            ),
+            tooltip: isOffline ? 'Offline' : 'Not synced — tap to sign in',
             onPressed: () {
+              if (isOffline) {
+                _showOfflineSnackbar(context);
+                return;
+              }
               showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -43,7 +64,6 @@ class SyncStatusAction extends ConsumerWidget {
           );
         }
 
-        final status = ref.watch(syncStatusProvider);
 
         IconData icon;
         Color? color;
@@ -77,13 +97,7 @@ class SyncStatusAction extends ConsumerWidget {
             if (status == SyncStatus.syncing) return;
 
             if (status == SyncStatus.offline) {
-              ScaffoldMessenger.of(context).clearSnackBars();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('You\'re offline — get back online to sync'),
-                  duration: Duration(seconds: 3),
-                ),
-              );
+              _showOfflineSnackbar(context);
               return;
             }
 

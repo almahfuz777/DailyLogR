@@ -1,4 +1,5 @@
 // lib/widgets/auth_sheet.dart
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -39,9 +40,21 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
     super.dispose();
   }
 
+  // Connectivity guard — returns true and sets error message if offline.
+  Future<bool> _checkOffline() async {
+    final results = await Connectivity().checkConnectivity();
+    if (results.every((r) => r == ConnectivityResult.none)) {
+      setState(() => _errorMessage =
+          'No internet connection. Please connect to Wi-Fi or mobile data and try again.');
+      return true;
+    }
+    return false;
+  }
+
   // Submit form handler
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (await _checkOffline()) return;
 
     setState(() {
       _isEmailLoading = true;
@@ -102,6 +115,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
 
   // Submit Google authentication handler
   Future<void> _submitGoogle() async {
+    if (await _checkOffline()) return;
     setState(() {
       _isGoogleLoading = true;
       _errorMessage = null;
@@ -136,6 +150,7 @@ class _AuthSheetContentState extends State<_AuthSheetContent> {
       setState(() => _errorMessage = 'Enter a valid email address.');
       return;
     }
+    if (await _checkOffline()) return;
 
     setState(() {
       _isEmailLoading = true;
