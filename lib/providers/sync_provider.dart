@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dailylogr/services/sync_service.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
+import 'package:dailylogr/providers/user_config_provider.dart';
 
 enum SyncStatus { synced, syncing, offline, error }
 
@@ -69,6 +70,7 @@ class SyncStatusNotifier extends Notifier<SyncStatus> with WidgetsBindingObserve
       await SyncService.pullSync();
       state = SyncStatus.synced;
       ref.invalidate(journalProvider); // Always update UI once sync finishes!
+      ref.invalidate(userConfigProvider); // Update user config provider when sync completes
     } catch (e) {
       state = SyncStatus.error;
       rethrow;

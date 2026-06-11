@@ -4,6 +4,7 @@ import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/services/sync_service.dart';
 import 'package:dailylogr/services/notification_service.dart';
+import 'package:dailylogr/models/user_config.dart';
 
 // Custom exception for entry conflicts (same date)
 class JournalEntryConflictException implements Exception {
@@ -17,9 +18,11 @@ class JournalEntryConflictException implements Exception {
 
 class HiveService {
   static const String _anonymousBoxName = 'journal_entries';
+  static const String _anonymousConfigBoxName = 'user_config';
 
   /// The currently active box name, keyed by UID when authenticated.
   static String _activeBoxName = _anonymousBoxName;
+  static String _activeConfigBoxName = _anonymousConfigBoxName;
 
   // INIT — opens the anonymous (default) box at app startup.
   static Future<void> init() async {
@@ -27,7 +30,11 @@ class HiveService {
     if (!Hive.isAdapterRegistered(0)) {
       Hive.registerAdapter(JournalEntryAdapter());
     }
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(UserConfigAdapter());
+    }
     await Hive.openBox<JournalEntry>(_anonymousBoxName);
+    await Hive.openBox<UserConfig>(_anonymousConfigBoxName);
   }
 
   /// Switches the active Hive box when a user logs in or out.
@@ -35,23 +42,33 @@ class HiveService {
   /// - **Logout** ([uid] null): wipes the user-specific box from disk
   static Future<void> switchUser(String? uid) async {
     final targetBoxName = uid != null ? 'journal_entries_$uid' : _anonymousBoxName;
+    final targetConfigBoxName = uid != null ? 'user_config_$uid' : _anonymousConfigBoxName;
 
     // Already on the correct box — nothing to do.
     if (targetBoxName == _activeBoxName) return;
 
     final previousBoxName = _activeBoxName;
+    final previousConfigBoxName = _activeConfigBoxName;
 
-    // Open the target box if not already open.
+    // Open the target boxes if not already open.
     if (!Hive.isBoxOpen(targetBoxName)) {
       await Hive.openBox<JournalEntry>(targetBoxName);
     }
+    if (!Hive.isBoxOpen(targetConfigBoxName)) {
+      await Hive.openBox<UserConfig>(targetConfigBoxName);
+    }
 
     _activeBoxName = targetBoxName;
+    _activeConfigBoxName = targetConfigBoxName;
 
     // On logout: wipe the authenticated user's box from disk.
     if (uid == null && previousBoxName != _anonymousBoxName) {
       if (Hive.isBoxOpen(previousBoxName)) {
         final box = Hive.box<JournalEntry>(previousBoxName);
+        await box.deleteFromDisk();
+      }
+      if (Hive.isBoxOpen(previousConfigBoxName)) {
+        final box = Hive.box<UserConfig>(previousConfigBoxName);
         await box.deleteFromDisk();
       }
     }
@@ -180,6 +197,8 @@ class HiveService {
 
   // Public accessor to the opened box
   static Box<JournalEntry> get journalBox => Hive.box<JournalEntry>(_activeBoxName);
+
+  static Box<UserConfig> get configBox => Hive.box<UserConfig>(_activeConfigBoxName);
 
   static void _checkAndCancelNotifications(DateTime entryDate) {
     final now = DateTime.now();

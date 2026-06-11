@@ -6,6 +6,7 @@ import 'package:dailylogr/services/firebase_auth_service.dart';
 import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
 import 'package:dailylogr/providers/sync_provider.dart';
+import 'package:dailylogr/providers/user_config_provider.dart';
 
 /// Tracks pending anonymous entry migration state so the UI can reactively show a dialog when needed.
 class PendingMigration {
@@ -40,6 +41,7 @@ class AuthLifecycle {
     }
 
     _ref.invalidate(journalProvider);
+    _ref.invalidate(userConfigProvider);
 
     if (user != null) {
       _ref.read(syncStatusProvider.notifier).sync().catchError((e) {});

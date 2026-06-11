@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dailylogr/models/journal_entry.dart';
+import 'package:dailylogr/models/user_config.dart';
 import 'package:dailylogr/services/hive_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dailylogr/utils/date_helper.dart';
@@ -12,6 +13,16 @@ class SyncService {
     final user = _auth.currentUser;
     if (user == null) return null;
     return _firestore.collection('users').doc(user.uid).collection('entries');
+  }
+
+  static DocumentReference<Map<String, dynamic>>? get _userConfigRef {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('config')
+        .doc('main');
   }
 
   /// Pushes an entry to Firestore.
@@ -40,6 +51,9 @@ class SyncService {
   static Future<void> pullSync() async {
     final ref = _userEntriesRef;
     if (ref == null) return;
+
+    // Pull config first
+    await pullUserConfig();
 
     final snapshot = await ref.get();
     final cloudKeys = <String>{};
@@ -97,6 +111,13 @@ class SyncService {
     final ref = _userEntriesRef;
     if (ref == null) return;
 
+    // Push config
+    final configBox = HiveService.configBox;
+    final config = configBox.get('main');
+    if (config != null) {
+      await pushUserConfig(config);
+    }
+
     for (final entry in HiveService.journalBox.values) {
       await pushEntry(entry);
     }
@@ -108,5 +129,40 @@ class SyncService {
     if (ref == null) return;
     final docId = DayKey.of(DayKey.normalize(entry.date));
     await ref.doc(docId).delete();
+  }
+
+  // ---------- User Config ----------
+
+  static Future<void> pushUserConfig(UserConfig config) async {
+    final ref = _userConfigRef;
+    if (ref == null) return;
+    await ref.set(config.toJson(), SetOptions(merge: true));
+  }
+
+  static Future<void> pullUserConfig() async {
+    final ref = _userConfigRef;
+    if (ref == null) return;
+
+    final snapshot = await ref.get();
+    if (snapshot.exists && snapshot.data() != null) {
+      final cloudConfig = UserConfig.fromJson(snapshot.data()!);
+      final localConfig = HiveService.configBox.get('main');
+
+      if (localConfig == null) {
+        await HiveService.configBox.put('main', cloudConfig);
+      } else {
+        if (cloudConfig.updatedAt.isAfter(localConfig.updatedAt)) {
+          await HiveService.configBox.put('main', cloudConfig);
+        } else if (localConfig.updatedAt.isAfter(cloudConfig.updatedAt)) {
+          await pushUserConfig(localConfig);
+        }
+      }
+    } else {
+      // Cloud config doesn't exist, push local if it exists
+      final localConfig = HiveService.configBox.get('main');
+      if (localConfig != null) {
+        await pushUserConfig(localConfig);
+      }
+    }
   }
 }
