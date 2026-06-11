@@ -307,7 +307,19 @@ class _JournalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final hasTitle = entry.title?.trim().isNotEmpty ?? false;
+
+    final baseColor = isToday ? color.primaryContainer : color.surfaceContainerLow;
+    Color cardColor = baseColor;
+    if (entry.entryColor != null) {
+      final customColor = Color(entry.entryColor!);
+      cardColor = isDark
+          ? Color.alphaBlend(customColor.withValues(alpha: 0.12), baseColor)
+          : isToday
+              ? Color.alphaBlend(customColor.withValues(alpha: 0.2), baseColor)
+              : customColor;
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -326,7 +338,7 @@ class _JournalCard extends StatelessWidget {
               width: isToday ? 1.5 : 1.0,
             ),
           ),
-          color: isToday ? color.primaryContainer : color.surfaceContainerLow,
+          color: cardColor,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,

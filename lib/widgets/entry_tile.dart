@@ -21,15 +21,27 @@ class EntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     final hasTitle = entry.title?.trim().isNotEmpty ?? false;
     final mood = entry.adjective;
     final rating = entry.rating;
 
+    final baseColor = isSelected ? color.primaryContainer : color.surfaceContainerLow;
+    Color cardColor = baseColor;
+    if (entry.entryColor != null) {
+      final customColor = Color(entry.entryColor!);
+      cardColor = isDark
+          ? Color.alphaBlend(customColor.withValues(alpha: 0.12), baseColor)
+          : isSelected
+              ? Color.alphaBlend(customColor.withValues(alpha: 0.2), baseColor)
+              : customColor;
+    }
+
     return Card(
       elevation: isSelected ? 2 : 0,
       margin: EdgeInsets.zero,
-      color: isSelected ? color.primaryContainer : color.surfaceContainerLow,
+      color: cardColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: isSelected 
