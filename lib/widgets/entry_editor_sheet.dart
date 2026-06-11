@@ -1,5 +1,6 @@
 // lib/widgets/entry_editor_sheet.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
@@ -71,6 +72,11 @@ Future<void> entryEditorSheet(
       ),
     ),
   );
+
+  // If auto-save was enabled, the form has already saved all changes directly to the database.
+  final prefs = await SharedPreferences.getInstance();
+  final autoSaveEnabled = prefs.getBool('pref_auto_save') ?? true;
+  if (autoSaveEnabled) return;
 
   if (updatedEntry == null) return;
 

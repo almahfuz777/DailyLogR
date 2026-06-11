@@ -13,6 +13,7 @@ class EntryBottomToolbar extends StatelessWidget {
   final int? entryColor;
   final bool readOnly;
   final bool showDeleteOption;
+  final bool isDuplicateDate;
   final VoidCallback onPickDate;
   final VoidCallback onShowMoodPicker;
   final VoidCallback onShowRatingPicker;
@@ -28,6 +29,7 @@ class EntryBottomToolbar extends StatelessWidget {
     this.entryColor,
     this.readOnly = false,
     this.showDeleteOption = false,
+    this.isDuplicateDate = false,
     required this.onPickDate,
     required this.onShowMoodPicker,
     required this.onShowRatingPicker,
@@ -58,7 +60,7 @@ class EntryBottomToolbar extends StatelessWidget {
           children: [
             // Mood Row
             InkWell(
-              onTap: readOnly ? null : onShowMoodPicker,
+              onTap: (readOnly || isDuplicateDate) ? null : onShowMoodPicker,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
@@ -94,7 +96,7 @@ class EntryBottomToolbar extends StatelessWidget {
             
             // Rating Row
             InkWell(
-              onTap: readOnly ? null : onShowRatingPicker,
+              onTap: (readOnly || isDuplicateDate) ? null : onShowRatingPicker,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
@@ -137,29 +139,41 @@ class EntryBottomToolbar extends StatelessWidget {
               child: Row(
                 children: [
                   // Date Chip
-                  InkWell(
-                    onTap: readOnly ? null : onPickDate,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: color.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.calendar_today_outlined, size: 16, color: color.onSurfaceVariant),
-                          const SizedBox(width: 6),
-                          Text(
-                            DayKey.ofShort(date),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: color.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
+                  Tooltip(
+                    message: isDuplicateDate ? 'Entry already exists, change the date' : '',
+                    child: InkWell(
+                      onTap: readOnly ? null : onPickDate,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDuplicateDate
+                              ? color.errorContainer
+                              : color.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: isDuplicateDate
+                              ? Border.all(color: color.error, width: 1.5)
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: isDuplicateDate ? color.onErrorContainer : color.onSurfaceVariant,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              DayKey.ofShort(date),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDuplicateDate ? color.onErrorContainer : color.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -168,7 +182,7 @@ class EntryBottomToolbar extends StatelessWidget {
 
                   // Color Picker Trigger
                   InkWell(
-                    onTap: onShowColorPicker,
+                    onTap: (readOnly || isDuplicateDate) ? null : onShowColorPicker,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       width: 28,

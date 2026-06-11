@@ -1,4 +1,8 @@
 // lib/widgets/entry_form.dart
+import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dailylogr/providers/journal_provider.dart';
+import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +33,7 @@ class EntryForm extends ConsumerStatefulWidget {
 }
 
 class _EntryFormState extends ConsumerState<EntryForm> {
+  late String _entryId;
   late DateTime _date;
   final _titleCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
@@ -41,10 +46,15 @@ class _EntryFormState extends ConsumerState<EntryForm> {
   bool _canUndo = false;
   bool _canRedo = false;
 
+  bool _autoSaveEnabled = true;
+  Timer? _debounceTimer;
+  String? _autoSaveStatus; // 'saving', 'saved', or null
+
   @override
   void initState() {
     super.initState();
     final e = widget.initial;
+    _entryId = e?.id ?? DateTime.now().microsecondsSinceEpoch.toString();
     _date = DayKey.normalize(e?.date ?? widget.initialDate ?? DateTime.now());
     _titleCtrl.text = e?.title ?? '';
     _noteCtrl.text = e?.note ?? '';
@@ -55,12 +65,21 @@ class _EntryFormState extends ConsumerState<EntryForm> {
     // Listen for undo/redo state changes
     _titleUndoCtrl.addListener(_syncUndoState);
     _noteUndoCtrl.addListener(_syncUndoState);
+
+    // Setup auto-save listener
+    _titleCtrl.addListener(_onTextChanged);
+    _noteCtrl.addListener(_onTextChanged);
+
+    _loadAutoSavePreference();
   }
 
   @override
   void dispose() {
+    _titleCtrl.removeListener(_onTextChanged);
+    _noteCtrl.removeListener(_onTextChanged);
     _titleUndoCtrl.removeListener(_syncUndoState);
     _noteUndoCtrl.removeListener(_syncUndoState);
+    _debounceTimer?.cancel();
     _titleCtrl.dispose();
     _noteCtrl.dispose();
     _noteFocus.dispose();
@@ -213,6 +232,110 @@ class _EntryFormState extends ConsumerState<EntryForm> {
     );
   }
 
+  // Load auto-save preference
+  Future<void> _loadAutoSavePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _autoSaveEnabled = prefs.getBool('pref_auto_save') ?? true;
+      });
+    }
+  }
+
+  // Handle typing debouncer
+  void _onTextChanged() {
+    if (!_autoSaveEnabled) return;
+    _debounceTimer?.cancel();
+    if (_noteCtrl.text.trim().isEmpty) return;
+
+    setState(() {
+      _autoSaveStatus = 'saving';
+    });
+
+    _debounceTimer = Timer(const Duration(milliseconds: 1500), () async {
+      await _performAutoSave();
+    });
+  }
+
+  // Handle immediate auto-save for picker updates
+  void _triggerImmediateAutoSave() {
+    if (!_autoSaveEnabled) return;
+    _debounceTimer?.cancel();
+    if (_noteCtrl.text.trim().isEmpty) return;
+
+    setState(() {
+      _autoSaveStatus = 'saving';
+    });
+
+    _performAutoSave();
+  }
+
+  // Background database save action
+  Future<void> _performAutoSave() async {
+    final note = _noteCtrl.text.trim();
+    if (note.isEmpty) return;
+
+    // Guard: don't save if duplicate date exists
+    final entries = ref.read(journalProvider);
+    final isDuplicate = entries.any((e) =>
+        DayKey.of(e.date) == DayKey.of(_date) &&
+        e.id != _entryId &&
+        !e.isDeleted);
+    if (isDuplicate) {
+      setState(() {
+        _autoSaveStatus = null;
+      });
+      return;
+    }
+
+    final entry = JournalEntry(
+      id: _entryId,
+      date: _date,
+      title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+      note: note,
+      adjective: (_adjective != null && _adjective!.trim().isNotEmpty)
+          ? _adjective
+          : null,
+      rating: _rating,
+      updatedAt: DateTime.now(),
+      entryColor: _entryColor,
+    );
+
+    try {
+      final notifier = ref.read(journalProvider.notifier);
+      final exists = entries.any((e) => e.id == _entryId);
+
+      if (exists) {
+        final original = entries.firstWhere((e) => e.id == _entryId);
+        await notifier.updateEntry(original, entry);
+      } else {
+        await notifier.createEntry(entry);
+      }
+
+      if (mounted) {
+        setState(() {
+          _autoSaveStatus = 'saved';
+        });
+
+        // Hide "Saved" indicator after 2 seconds
+        Timer(const Duration(seconds: 2), () {
+          if (mounted && _autoSaveStatus == 'saved') {
+            setState(() {
+              _autoSaveStatus = null;
+            });
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to autosave entry: $e');
+      if (mounted) {
+        setState(() {
+          _autoSaveStatus = null;
+        });
+      }
+    }
+  }
+
   // Pick date for entry 
   Future<void> _pickDate() async {
     final today = DayKey.normalize(DateTime.now());
@@ -224,11 +347,24 @@ class _EntryFormState extends ConsumerState<EntryForm> {
       initialDate: initialDate,
       firstDate: firstAllowed,
       lastDate: today,
-      selectableDayPredicate: DayKey.isWithinEditWindow,
+      selectableDayPredicate: (date) {
+        if (!DayKey.isWithinEditWindow(date)) return false;
+
+        // Must always allow initialDate to satisfy showDatePicker assertion
+        if (DayKey.of(date) == DayKey.of(initialDate)) return true;
+
+        final entries = ref.read(journalProvider);
+        final isDuplicate = entries.any((e) =>
+            DayKey.of(e.date) == DayKey.of(date) &&
+            e.id != _entryId &&
+            !e.isDeleted);
+        return !isDuplicate;
+      },
     );
 
     if (picked != null) {
       setState(() => _date = DayKey.normalize(picked));
+      _triggerImmediateAutoSave();
     }
   }
 
@@ -241,10 +377,18 @@ class _EntryFormState extends ConsumerState<EntryForm> {
       return;
     }
 
+    final entries = ref.read(journalProvider);
+    final isDuplicate = entries.any((e) =>
+        DayKey.of(e.date) == DayKey.of(_date) &&
+        e.id != _entryId &&
+        !e.isDeleted);
+    if (isDuplicate) {
+      _showSnack("An entry already exists for this date.");
+      return;
+    }
+
     final entry = JournalEntry(
-      id:
-          widget.initial?.id ??
-          DateTime.now().microsecondsSinceEpoch.toString(),
+      id: _entryId,
       date: _date,
       title: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
       note: note,
@@ -256,7 +400,14 @@ class _EntryFormState extends ConsumerState<EntryForm> {
       entryColor: _entryColor,
     );
 
-    Navigator.pop(context, entry);
+    if (_autoSaveEnabled) {
+      await _performAutoSave();
+      if (mounted) {
+        Navigator.pop(context, entry);
+      }
+    } else {
+      Navigator.pop(context, entry);
+    }
   }
 
   // Confirm delete entry
@@ -308,6 +459,7 @@ class _EntryFormState extends ConsumerState<EntryForm> {
 
     if (result != null && mounted) {
       setState(() => _adjective = result.isEmpty ? null : result);
+      _triggerImmediateAutoSave();
     }
   }
 
@@ -327,6 +479,7 @@ class _EntryFormState extends ConsumerState<EntryForm> {
       setState(() {
         _rating = result == -1 ? null : result;
       });
+      _triggerImmediateAutoSave();
     }
   }
 
@@ -344,6 +497,7 @@ class _EntryFormState extends ConsumerState<EntryForm> {
 
     if (mounted) {
       setState(() => _entryColor = result);
+      _triggerImmediateAutoSave();
     }
   }
 
@@ -351,6 +505,12 @@ class _EntryFormState extends ConsumerState<EntryForm> {
   @override
   Widget build(BuildContext context) {
     final bgColor = _entryColor != null ? Color(_entryColor!) : null;
+
+    final entries = ref.watch(journalProvider);
+    final isDuplicateDate = entries.any((e) =>
+        DayKey.of(e.date) == DayKey.of(_date) &&
+        e.id != _entryId &&
+        !e.isDeleted);
 
     return Column(
       children: [
@@ -365,6 +525,9 @@ class _EntryFormState extends ConsumerState<EntryForm> {
           onRedo: _redo,
           onBulletList: () => _insertLinePrefix('- '),
           onNumberedList: _insertNumberedList,
+          isAutoSaveOn: _autoSaveEnabled,
+          autoSaveStatus: _autoSaveStatus,
+          isDuplicateDate: isDuplicateDate,
         ),
 
         // Content Area for Entry Form
@@ -372,7 +535,7 @@ class _EntryFormState extends ConsumerState<EntryForm> {
           titleCtrl: _titleCtrl,
           noteCtrl: _noteCtrl,
           noteFocus: _noteFocus,
-          readOnly: widget.readOnly,
+          readOnly: widget.readOnly || isDuplicateDate,
           titleUndoController: _titleUndoCtrl,
           noteUndoController: _noteUndoCtrl,
           backgroundColor: bgColor,
@@ -384,6 +547,7 @@ class _EntryFormState extends ConsumerState<EntryForm> {
           adjective: _adjective,
           rating: _rating,
           readOnly: widget.readOnly,
+          isDuplicateDate: isDuplicateDate,
           showDeleteOption: widget.initial != null,
           updatedAt: widget.initial?.updatedAt,
           entryColor: _entryColor,

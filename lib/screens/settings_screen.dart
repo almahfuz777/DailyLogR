@@ -9,6 +9,7 @@ import 'package:dailylogr/providers/version_provider.dart';
 import 'package:dailylogr/providers/user_config_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -21,11 +22,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isLinkingGoogle = false;
   bool _isNotificationsEnabled = false;
   bool _isLoadingNotifications = true;
+  bool _isAutoSaveEnabled = true;
+  bool _isLoadingAutoSave = true;
 
   @override
   void initState() {
     super.initState();
     _loadNotificationState();
+    _loadAutoSaveState();
+  }
+
+  Future<void> _loadAutoSaveState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _isAutoSaveEnabled = prefs.getBool('pref_auto_save') ?? true;
+        _isLoadingAutoSave = false;
+      });
+    }
+  }
+
+  Future<void> _setAutoSaveEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('pref_auto_save', enabled);
+    if (mounted) {
+      setState(() {
+        _isAutoSaveEnabled = enabled;
+      });
+    }
   }
 
   Future<void> _launchUrl(String url) async {
@@ -316,6 +340,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               );
             },
           ),
+
+          if (_isLoadingAutoSave)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else
+            SwitchListTile(
+              secondary: const Icon(Icons.save_as_outlined),
+              title: const Text('Auto-save Entries'),
+              subtitle: const Text('Save changes to entries automatically as you write.'),
+              value: _isAutoSaveEnabled,
+              onChanged: _setAutoSaveEnabled,
+            ),
 
           const Divider(),
 

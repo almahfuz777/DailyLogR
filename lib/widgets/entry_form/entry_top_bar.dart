@@ -13,6 +13,9 @@ class EntryTopBar extends StatelessWidget {
   final VoidCallback? onRedo;
   final VoidCallback? onBulletList;
   final VoidCallback? onNumberedList;
+  final bool isAutoSaveOn;
+  final String? autoSaveStatus;
+  final bool isDuplicateDate;
 
   const EntryTopBar({
     super.key,
@@ -25,7 +28,75 @@ class EntryTopBar extends StatelessWidget {
     this.onRedo,
     this.onBulletList,
     this.onNumberedList,
+    this.isAutoSaveOn = false,
+    this.autoSaveStatus,
+    this.isDuplicateDate = false,
   });
+
+  Widget _buildSaveButton(BuildContext context, ColorScheme color) {
+    final bool isSmall = MediaQuery.sizeOf(context).width < 360;
+
+    if (isDuplicateDate) {
+      if (isSmall) {
+        return IconButton.filledTonal(
+          onPressed: null,
+          icon: const Icon(Icons.error_outline, size: 20),
+          tooltip: 'Duplicate Date',
+        );
+      } else {
+        return FilledButton.tonalIcon(
+          onPressed: null,
+          icon: const Icon(Icons.error_outline, size: 18),
+          label: const Text('Duplicate Date'),
+        );
+      }
+    }
+
+    if (isAutoSaveOn) {
+      final String text = autoSaveStatus == 'saving' ? 'Saving...' : 'Saved';
+      final IconData icon = autoSaveStatus == 'saving' ? Icons.sync : Icons.check_circle_outline;
+      if (isSmall) {
+        return IconButton.filledTonal(
+          onPressed: null,
+          icon: autoSaveStatus == 'saving'
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(icon, size: 20),
+          tooltip: text,
+        );
+      } else {
+        return FilledButton.tonalIcon(
+          onPressed: null,
+          icon: autoSaveStatus == 'saving'
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Icon(icon, size: 18),
+          label: Text(text),
+        );
+      }
+    }
+
+    // Normal flow
+    if (isSmall) {
+      return IconButton.filledTonal(
+        onPressed: onSave,
+        icon: const Icon(Icons.check, size: 20),
+        tooltip: 'Save',
+      );
+    } else {
+      return FilledButton.tonalIcon(
+        onPressed: onSave,
+        icon: const Icon(Icons.check, size: 18),
+        label: const Text('Save'),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,18 +153,7 @@ class EntryTopBar extends StatelessWidget {
             ),
           ],
           const Spacer(),
-          if (!readOnly)
-            MediaQuery.sizeOf(context).width < 360
-                ? IconButton.filledTonal(
-                    onPressed: onSave,
-                    icon: const Icon(Icons.check, size: 20),
-                    tooltip: 'Save',
-                  )
-                : FilledButton.tonalIcon(
-                    onPressed: onSave,
-                    icon: const Icon(Icons.check, size: 18),
-                    label: const Text('Save'),
-                  ),
+          if (!readOnly) _buildSaveButton(context, color),
         ],
       ),
     );
