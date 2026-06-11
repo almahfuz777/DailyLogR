@@ -36,7 +36,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final streak = ref.watch(streakProvider);
     final carouselItems = DashboardCarouselItems.fromEntries(entries);
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final carouselHeight = (screenHeight * 0.48).clamp(340.0, 430.0);
+    final scale = (screenHeight / 800.0).clamp(0.7, 1.0);
+    final carouselHeight = (screenHeight * 0.48).clamp(240.0, 430.0);
 
     return StreamBuilder<User?>(
       stream: FirebaseAuthService.authStateChanges,
@@ -57,11 +58,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: [
             // Personalized Greeting
             Padding(
-              padding: const EdgeInsets.only(
-                bottom: 6,
+              padding: EdgeInsets.only(
+                bottom: 6 * scale,
                 left: 20,
                 right: 20,
-                top: 24,
+                top: 24 * scale,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,6 +80,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: color.primary,
+                      fontSize: (Theme.of(context).textTheme.headlineMedium?.fontSize ?? 28) * scale,
                     ),
                   ),
                 ],

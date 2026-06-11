@@ -72,6 +72,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isLastPage = _currentPage == _onboardingData.length - 1;
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final scale = (screenHeight / 800.0).clamp(0.7, 1.0);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -100,30 +102,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               itemBuilder: (context, index) {
                 final data = _onboardingData[index];
                 return Padding(
-                  padding: const EdgeInsets.all(40.0),
+                  padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 40.0 * scale),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
                         data['icon'],
-                        size: 120,
+                        size: 120 * scale,
                         color: data['color'],
                       ),
-                      const SizedBox(height: 48),
+                      SizedBox(height: 48 * scale),
                       Text(
                         data['title'],
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: Theme.of(context).colorScheme.onSurface,
+                              fontSize: (Theme.of(context).textTheme.headlineMedium?.fontSize ?? 28.0) * scale,
                             ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: 24 * scale),
                       Text(
                         data['description'],
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.5,
+                              fontSize: (Theme.of(context).textTheme.bodyLarge?.fontSize ?? 16.0) * scale,
                             ),
                         textAlign: TextAlign.center,
                       ),
@@ -135,7 +139,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(24.0 * scale),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

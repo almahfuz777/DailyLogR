@@ -26,8 +26,12 @@ class ActivityCalendarStrip extends StatefulWidget {
 
 class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
   static const int _historyDays = 90;
-  static const double _boxSize = 44.0;
   static const double _boxSpacing = 6.0;
+
+  double get _boxSize {
+    final scale = (MediaQuery.sizeOf(context).height / 800.0).clamp(0.7, 1.0);
+    return 44.0 * scale;
+  }
 
   late final ScrollController _scrollController;
   late final DateTime _today;
@@ -90,10 +94,11 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = theme.colorScheme;
+    final scale = (MediaQuery.sizeOf(context).height / 800.0).clamp(0.7, 1.0);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(20, 6, 20, 8),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      margin: EdgeInsets.fromLTRB(20, 6 * scale, 20, 8 * scale),
+      padding: EdgeInsets.fromLTRB(12, 8 * scale, 12, 10 * scale),
       decoration: BoxDecoration(
         color: color.secondaryContainer.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(16),
@@ -169,6 +174,7 @@ class _DateBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme;
+    final scale = (MediaQuery.sizeOf(context).height / 800.0).clamp(0.7, 1.0);
 
     final fillColor = hasEntry
         ? Colors.green.withValues(alpha: 0.55)
@@ -198,6 +204,7 @@ class _DateBox extends StatelessWidget {
           color: hasEntry
               ? Colors.green.shade900
               : color.onSurfaceVariant,
+          fontSize: (Theme.of(context).textTheme.labelLarge?.fontSize ?? 14.0) * scale,
         ),
       ),
     );

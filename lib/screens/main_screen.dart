@@ -3,6 +3,7 @@ import 'package:dailylogr/utils/app_screens.dart';
 import 'package:dailylogr/providers/auth_lifecycle_provider.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
 import 'package:dailylogr/screens/entries_screen.dart';
+import 'package:dailylogr/screens/trash_screen.dart';
 import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/widgets/auth_sheet.dart';
@@ -128,6 +129,35 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           : null,
 
       body: _currentScreen.buildBody(),
+
+      bottomNavigationBar: _currentScreen == AppScreen.entries && selectedEntries.isEmpty
+          ? Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Recently Deleted'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TrashScreen()),
+                  );
+                },
+              ),
+            )
+          : null,
     );
   }
 

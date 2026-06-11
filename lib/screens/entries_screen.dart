@@ -3,7 +3,6 @@ import 'package:dailylogr/utils/date_helper.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:dailylogr/widgets/empty_state.dart';
-import 'package:dailylogr/screens/trash_screen.dart';
 import 'package:dailylogr/widgets/entry_tile.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
@@ -152,35 +151,6 @@ class EntriesScreen extends ConsumerWidget {
                     );
                   },
                 ),
-        ),
-        
-        // Anchored bottom button
-        Container(
-          padding: const EdgeInsets.all(16.0),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 4,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: OutlinedButton.icon(
-            icon: const Icon(Icons.delete_outline),
-            label: const Text('Recently Deleted'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context, 
-                MaterialPageRoute(builder: (_) => const TrashScreen()),
-              );
-            },
-          ),
         ),
       ],
     );

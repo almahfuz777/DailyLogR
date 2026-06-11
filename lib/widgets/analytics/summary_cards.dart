@@ -69,8 +69,11 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final scale = (screenWidth / 375.0).clamp(0.8, 1.0);
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(12 * scale),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
@@ -78,26 +81,33 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor, size: 24),
-          const SizedBox(height: 12),
+          Icon(icon, color: iconColor, size: 24 * scale),
+          SizedBox(height: 12 * scale),
           Text(
             value,
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,
+              fontSize: (theme.textTheme.headlineMedium?.fontSize ?? 28.0) * scale,
             ),
           ),
           Text(
             title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: theme.colorScheme.onSurfaceVariant,
+              fontSize: (theme.textTheme.bodyMedium?.fontSize ?? 14.0) * scale,
             ),
           ),
           Text(
             subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              fontSize: (theme.textTheme.bodySmall?.fontSize ?? 12.0) * scale,
             ),
           ),
         ],

@@ -133,7 +133,7 @@ class EntryBottomToolbar extends StatelessWidget {
             // Bottom Row (Date, Color, Last Edited, Delete)
             Container(
               color: color.surfaceContainerHigh,
-              padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Row(
                 children: [
                   // Date Chip
@@ -187,17 +187,23 @@ class EntryBottomToolbar extends StatelessWidget {
                     ),
                   ),
 
-                  const Spacer(),
-                  
-                  // Last edited datetime
-                  if (updatedAt != null)
-                    Text(
-                      'Last edited: ${DayKey.ofShort(updatedAt!)} at ${DayKey.ofTime(updatedAt!)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: color.onSurfaceVariant.withValues(alpha: 0.6),
+                  if (updatedAt != null) ...[
+                    Expanded(
+                      child: Text(
+                        MediaQuery.sizeOf(context).width < 360
+                            ? 'Ed: ${DayKey.ofTime(updatedAt!)}'
+                            : 'Last edited: ${DayKey.ofShort(updatedAt!)} at ${DayKey.ofTime(updatedAt!)}',
+                        textAlign: TextAlign.end,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: color.onSurfaceVariant.withValues(alpha: 0.6),
+                        ),
                       ),
                     ),
+                  ] else
+                    const Spacer(),
                   
                   // Delete icon
                   if (showDeleteOption && !readOnly) ...[
@@ -206,6 +212,11 @@ class EntryBottomToolbar extends StatelessWidget {
                       icon: Icon(Icons.delete_outline, color: color.error.withValues(alpha: 0.8)),
                       tooltip: 'Delete entry',
                       onPressed: onDelete,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      style: const ButtonStyle(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                     ),
                   ]
                 ],

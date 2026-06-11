@@ -51,8 +51,13 @@ class EntryTopBar extends StatelessWidget {
             tooltip: readOnly ? 'Close' : 'Discard',
           ),
           if (!readOnly) ...[
+            Container(
+              height: 20,
+              width: 1,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              color: color.outlineVariant.withValues(alpha: 0.5),
+            ),
             if (canUndo || canRedo) ...[
-              const SizedBox(width: 4),
               IconButton(
                 icon: const Icon(Icons.undo, size: 20),
                 onPressed: canUndo ? onUndo : null,
@@ -78,11 +83,17 @@ class EntryTopBar extends StatelessWidget {
           ],
           const Spacer(),
           if (!readOnly)
-            FilledButton.tonalIcon(
-              onPressed: onSave,
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Save'),
-            ),
+            MediaQuery.sizeOf(context).width < 360
+                ? IconButton.filledTonal(
+                    onPressed: onSave,
+                    icon: const Icon(Icons.check, size: 20),
+                    tooltip: 'Save',
+                  )
+                : FilledButton.tonalIcon(
+                    onPressed: onSave,
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('Save'),
+                  ),
         ],
       ),
     );
