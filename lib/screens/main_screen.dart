@@ -10,6 +10,7 @@ import 'package:dailylogr/widgets/auth_sheet.dart';
 import 'package:dailylogr/widgets/entry_editor_sheet.dart';
 import 'package:dailylogr/widgets/home_drawer.dart';
 import 'package:dailylogr/widgets/sync_status_action.dart';
+import 'package:dailylogr/services/widget_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,6 +40,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep home widget synced with app state
+    ref.watch(widgetUpdaterProvider);
+
     final color = Theme.of(context).colorScheme;
 
     // React to pending migration signal from the auth lifecycle provider.
