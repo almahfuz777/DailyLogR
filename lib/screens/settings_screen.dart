@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:dailylogr/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/providers/version_provider.dart';
-import 'package:dailylogr/providers/settings_provider.dart';
+import 'package:dailylogr/providers/user_config_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -60,7 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           final isSelected = day.value == currentDay;
           return SimpleDialogOption(
             onPressed: () {
-              ref.read(settingsProvider.notifier).setFirstDayOfWeek(day.value);
+              ref.read(userConfigProvider.notifier).setFirstDayOfWeek(day.value);
               Navigator.pop(ctx);
             },
             child: Row(
@@ -300,10 +300,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
 
-          ref.watch(settingsProvider).when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-            data: (settings) {
+          Builder(
+            builder: (context) {
+              final config = ref.watch(userConfigProvider);
               const dayNames = {
                 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
                 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday',
@@ -311,9 +310,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               return ListTile(
                 leading: const Icon(Icons.calendar_today_outlined),
                 title: const Text('First Day of Week'),
-                subtitle: Text(dayNames[settings.firstDayOfWeek] ?? 'Saturday'),
+                subtitle: Text(dayNames[config.firstDayOfWeek] ?? 'Saturday'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showFirstDayOfWeekDialog(settings.firstDayOfWeek),
+                onTap: () => _showFirstDayOfWeekDialog(config.firstDayOfWeek),
               );
             },
           ),

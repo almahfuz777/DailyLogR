@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/journal_provider.dart';
 import '../providers/streak_provider.dart';
-import '../providers/settings_provider.dart';
+import '../providers/user_config_provider.dart';
 import '../models/journal_entry.dart';
 import '../utils/analytics_helper.dart';
 import '../widgets/analytics/summary_cards.dart';
@@ -27,8 +27,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final allEntries = ref.watch(journalProvider);
-    final settingsAsync = ref.watch(settingsProvider);
-    final firstDayOfWeek = settingsAsync.valueOrNull?.firstDayOfWeek ?? kDefaultFirstDayOfWeek;
+    final userConfig = ref.watch(userConfigProvider);
+    final firstDayOfWeek = userConfig.firstDayOfWeek;
 
     // Filter entries based on selection
     List<JournalEntry> filteredEntries;
