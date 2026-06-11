@@ -24,15 +24,16 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       adjective: fields[4] as String?,
       rating: fields[5] as int?,
       updatedAt: fields[6] as DateTime?,
-      isDeleted: fields[7] == null ? false : fields[7] as bool,
+      isDeleted: fields[7] as bool,
       deletedAt: fields[8] as DateTime?,
+      entryColor: fields[9] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, JournalEntry obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -50,7 +51,9 @@ class JournalEntryAdapter extends TypeAdapter<JournalEntry> {
       ..writeByte(7)
       ..write(obj.isDeleted)
       ..writeByte(8)
-      ..write(obj.deletedAt);
+      ..write(obj.deletedAt)
+      ..writeByte(9)
+      ..write(obj.entryColor);
   }
 
   @override

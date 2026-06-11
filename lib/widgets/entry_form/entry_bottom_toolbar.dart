@@ -10,11 +10,13 @@ class EntryBottomToolbar extends StatelessWidget {
   final String? adjective;
   final int? rating;
   final DateTime? updatedAt;
+  final int? entryColor;
   final bool readOnly;
   final bool showDeleteOption;
   final VoidCallback onPickDate;
   final VoidCallback onShowMoodPicker;
   final VoidCallback onShowRatingPicker;
+  final VoidCallback onShowColorPicker;
   final VoidCallback onDelete;
 
   const EntryBottomToolbar({
@@ -23,11 +25,13 @@ class EntryBottomToolbar extends StatelessWidget {
     this.adjective,
     this.rating,
     this.updatedAt,
+    this.entryColor,
     this.readOnly = false,
     this.showDeleteOption = false,
     required this.onPickDate,
     required this.onShowMoodPicker,
     required this.onShowRatingPicker,
+    required this.onShowColorPicker,
     required this.onDelete,
   });
 
@@ -126,7 +130,7 @@ class EntryBottomToolbar extends StatelessWidget {
             ),
             Divider(height: 1, color: color.outlineVariant.withValues(alpha: 0.2)),
 
-            // Bottom Row (Date, Last Edited, Delete)
+            // Bottom Row (Date, Color, Last Edited, Delete)
             Container(
               color: color.surfaceContainerHigh,
               padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
@@ -160,6 +164,29 @@ class EntryBottomToolbar extends StatelessWidget {
                     ),
                   ),
                   
+                  const SizedBox(width: 8),
+
+                  // Color Picker Trigger
+                  InkWell(
+                    onTap: onShowColorPicker,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: entryColor != null ? Color(entryColor!) : color.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: color.outlineVariant.withValues(alpha: 0.6),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: entryColor == null
+                          ? Icon(Icons.palette_outlined, size: 14, color: color.onSurfaceVariant)
+                          : null,
+                    ),
+                  ),
+
                   const Spacer(),
                   
                   // Last edited datetime

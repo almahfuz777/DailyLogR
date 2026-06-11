@@ -14,9 +14,10 @@ class JournalEntry {
   @HiveField(6) DateTime updatedAt;
   @HiveField(7) bool isDeleted;
   @HiveField(8) DateTime? deletedAt;
+  @HiveField(9) int? entryColor;
 
   JournalEntry({
-    String? id,           // added id
+    String? id,
     required this.date, // 1 date per entry
     this.title,
     required this.note,
@@ -25,6 +26,7 @@ class JournalEntry {
     DateTime? updatedAt,  // last updated at
     this.isDeleted = false,
     this.deletedAt,
+    this.entryColor,
   })  : id = id ?? const Uuid().v4(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -38,6 +40,7 @@ class JournalEntry {
     DateTime? updatedAt,
     bool? isDeleted,
     DateTime? deletedAt,
+    int? entryColor,
   }) {
     return JournalEntry(
       id: id ?? this.id,
@@ -49,6 +52,7 @@ class JournalEntry {
       updatedAt: updatedAt ?? this.updatedAt,
       isDeleted: isDeleted ?? this.isDeleted,
       deletedAt: deletedAt ?? this.deletedAt,
+      entryColor: entryColor ?? this.entryColor,
     );
   }
 

@@ -1,18 +1,30 @@
 // lib/widgets/entry_form/entry_top_bar.dart
 import 'package:flutter/material.dart';
 
-/// A modular top app bar for the Entry Form.
-/// Contains the back button and the save button.
+/// Top app bar for the Entry Form.
+/// Contains back, undo/redo, and save actions.
 class EntryTopBar extends StatelessWidget {
   final bool readOnly;
+  final bool canUndo;
+  final bool canRedo;
   final VoidCallback onBack;
   final VoidCallback onSave;
+  final VoidCallback? onUndo;
+  final VoidCallback? onRedo;
+  final VoidCallback? onBulletList;
+  final VoidCallback? onNumberedList;
 
   const EntryTopBar({
     super.key,
     required this.readOnly,
+    this.canUndo = false,
+    this.canRedo = false,
     required this.onBack,
     required this.onSave,
+    this.onUndo,
+    this.onRedo,
+    this.onBulletList,
+    this.onNumberedList,
   });
 
   @override
@@ -38,6 +50,32 @@ class EntryTopBar extends StatelessWidget {
             onPressed: onBack,
             tooltip: readOnly ? 'Close' : 'Discard',
           ),
+          if (!readOnly) ...[
+            if (canUndo || canRedo) ...[
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.undo, size: 20),
+                onPressed: canUndo ? onUndo : null,
+                tooltip: 'Undo',
+              ),
+              IconButton(
+                icon: const Icon(Icons.redo, size: 20),
+                onPressed: canRedo ? onRedo : null,
+                tooltip: 'Redo',
+              ),
+            ],
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.format_list_bulleted, size: 20),
+              onPressed: onBulletList,
+              tooltip: 'Bulleted list',
+            ),
+            IconButton(
+              icon: const Icon(Icons.format_list_numbered, size: 20),
+              onPressed: onNumberedList,
+              tooltip: 'Numbered list',
+            ),
+          ],
           const Spacer(),
           if (!readOnly)
             FilledButton.tonalIcon(
@@ -50,3 +88,4 @@ class EntryTopBar extends StatelessWidget {
     );
   }
 }
+

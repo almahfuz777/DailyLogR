@@ -1,3 +1,4 @@
+// lib/services/sync_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dailylogr/models/journal_entry.dart';
 import 'package:dailylogr/models/user_config.dart';
@@ -43,6 +44,7 @@ class SyncService {
       'updatedAt': entry.updatedAt.toIso8601String(),
       'isDeleted': entry.isDeleted,
       'deletedAt': entry.deletedAt?.toIso8601String(),
+      'entryColor': entry.entryColor,
     }, SetOptions(merge: true));
   }
 
@@ -75,6 +77,7 @@ class SyncService {
         deletedAt: data['deletedAt'] != null 
             ? DateTime.parse(data['deletedAt'] as String) 
             : null,
+        entryColor: data['entryColor'] as int?,
       );
 
       final localEntry = HiveService.journalBox.get(docId);
