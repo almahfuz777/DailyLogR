@@ -83,6 +83,31 @@ class JournalNotifier extends Notifier<List<JournalEntry>> {
     await HiveService.permanentlyDeleteEntry(entry);
     _reload();
   }
+
+  /// Imports a list of entries, merging with existing entries.
+  /// If [forceOverwrite] is true, all duplicate entries are overwritten.
+  Future<int> importEntries(List<JournalEntry> imported, {bool forceOverwrite = false}) async {
+    final box = HiveService.journalBox;
+    int importedCount = 0;
+    for (final entry in imported) {
+      final normalizedDate = DayKey.normalize(entry.date);
+      final key = DayKey.of(normalizedDate);
+      final existing = box.get(key);
+      if (existing == null) {
+        await box.put(key, entry);
+        SyncService.pushEntry(entry);
+        importedCount++;
+      } else {
+        if (forceOverwrite) {
+          await box.put(key, entry);
+          SyncService.pushEntry(entry);
+          importedCount++;
+        }
+      }
+    }
+    _reload();
+    return importedCount;
+  }
 }
 
 final journalProvider = NotifierProvider<JournalNotifier, List<JournalEntry>>(() {
