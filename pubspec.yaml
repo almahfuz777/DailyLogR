@@ -65,6 +65,7 @@ dependencies:
   permission_handler: ^11.3.1
   package_info_plus: ^8.0.0
   fl_chart: ^0.68.0
+  emoji_picker_flutter: ^4.4.0
 
 dev_dependencies:
   flutter_test:

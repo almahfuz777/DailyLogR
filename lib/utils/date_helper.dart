@@ -13,6 +13,14 @@ class DayKey {
   /// Long format (Weekday, DD Month, YYYY)
   static String ofLong(DateTime d) => '${_days[d.weekday - 1]}, ${d.day} ${_fullMonths[d.month - 1]}, ${d.year}';
 
+  /// Time format (h:mm AM/PM)
+  static String ofTime(DateTime d) {
+    int hour = d.hour == 0 ? 12 : (d.hour > 12 ? d.hour - 12 : d.hour);
+    String amPm = d.hour < 12 ? 'AM' : 'PM';
+    String minute = d.minute.toString().padLeft(2, '0');
+    return '$hour:$minute $amPm';
+  }
+
   /// Strip time portion, keep only date
   static DateTime normalize(DateTime d) => DateTime(d.year, d.month, d.day);
 

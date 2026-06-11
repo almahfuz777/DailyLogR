@@ -1,9 +1,15 @@
 // lib/widgets/entry_form.dart
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dailylogr/models/journal_entry.dart';
+import 'package:dailylogr/widgets/entry_form/mood_picker_sheet.dart';
+import 'package:dailylogr/widgets/entry_form/rating_picker_sheet.dart';
+import 'package:dailylogr/widgets/entry_form/entry_top_bar.dart';
+import 'package:dailylogr/widgets/entry_form/entry_content_area.dart';
+import 'package:dailylogr/widgets/entry_form/entry_bottom_toolbar.dart';
 
-class EntryForm extends StatefulWidget {
+class EntryForm extends ConsumerStatefulWidget {
   final JournalEntry? initial;
   final DateTime? initialDate;
   final VoidCallback? onDelete;
@@ -18,48 +24,16 @@ class EntryForm extends StatefulWidget {
   });
 
   @override
-  State<EntryForm> createState() => _EntryFormState();
+  ConsumerState<EntryForm> createState() => _EntryFormState();
 }
 
-class _EntryFormState extends State<EntryForm> {
+class _EntryFormState extends ConsumerState<EntryForm> {
   late DateTime _date;
   final _titleCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _noteFocus = FocusNode();
   String? _adjective;
   int? _rating;
-
-  final List<String> _adjectives = const [
-    '😀 Happy',
-    '😞 Sad',
-    '😌 Calm',
-    '🎯 Focused',
-    '😪 Tired',
-    '😰 Anxious',
-    '🤩 Excited',
-    '🙏 Grateful',
-    '😡 Angry',
-    '😕 Confused',
-    '😇 Blessed',
-    '😐 Meh',
-    '😓 Stressed',
-    '😴 Sleepy',
-    '🤒 Sick',
-    '💪 Productive',
-    '🏖️ Relaxed',
-    '🤔 Thoughtful',
-    '🛌 Rested',
-    '😃 Joyful',
-    '😔 Lonely',
-    '😤 Frustrated',
-    '😎 Cool',
-    '🤗 Loved',
-    '❓ Uncertain',
-    '😩 Exhausted',
-    '🌟 Hopeful',
-    '😬 Nervous',
-    '🚀 Enthusiastic',
-  ];
 
   @override
   void initState() {
@@ -80,6 +54,7 @@ class _EntryFormState extends State<EntryForm> {
     super.dispose();
   }
 
+  // Show snackbar
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -90,6 +65,7 @@ class _EntryFormState extends State<EntryForm> {
     );
   }
 
+  // Pick date for entry 
   Future<void> _pickDate() async {
     final today = DayKey.normalize(DateTime.now());
     final firstAllowed = DayKey.editWindowStart;
@@ -108,6 +84,7 @@ class _EntryFormState extends State<EntryForm> {
     }
   }
 
+  // Save entry
   Future<void> _save() async {
     final note = _noteCtrl.text.trim();
 
@@ -133,6 +110,7 @@ class _EntryFormState extends State<EntryForm> {
     Navigator.pop(context, entry);
   }
 
+  // Confirm delete entry
   Future<void> _confirmDelete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -166,8 +144,9 @@ class _EntryFormState extends State<EntryForm> {
     }
   }
 
-  void _showMoodPicker() {
-    showModalBottomSheet(
+  // Show mood picker sheet
+  Future<void> _showMoodPicker() async {
+    final result = await showModalBottomSheet<String?>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -175,348 +154,65 @@ class _EntryFormState extends State<EntryForm> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.5,
-          minChildSize: 0.3,
-          maxChildSize: 0.75,
-          expand: false,
-          builder: (ctx, scrollController) {
-            final color = Theme.of(ctx).colorScheme;
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // const SizedBox(height: 16),
-                  Text(
-                    'How was your day?',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _adjectives.map((adj) {
-                          final selected = _adjective == adj;
-                          return ChoiceChip(
-                            label: Text(adj),
-                            selected: selected,
-                            onSelected: (_) {
-                              setState(
-                                () => _adjective = selected ? null : adj,
-                              );
-                              Navigator.pop(ctx);
-                            },
-                            showCheckmark: false,
-                            selectedColor: color.primaryContainer,
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (ctx) => MoodPickerSheet(initialMood: _adjective),
     );
+
+    if (result != null && mounted) {
+      setState(() => _adjective = result.isEmpty ? null : result);
+    }
   }
 
-  void _showRatingPicker() {
-    showModalBottomSheet(
+  // Show rating picker sheet
+  Future<void> _showRatingPicker() async {
+    final result = await showModalBottomSheet<int?>(
       context: context,
       showDragHandle: true,
       enableDrag: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
-        final color = Theme.of(ctx).colorScheme;
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Rate your day',
-                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (i) {
-                      final idx = i + 1;
-                      final filled = (_rating ?? 0) >= idx;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() => _rating = idx);
-                          setSheetState(() {});
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          child: Icon(
-                            filled
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 40,
-                            color: filled ? Colors.amber : color.outlineVariant,
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_rating != null)
-                    TextButton(
-                      onPressed: () {
-                        setState(() => _rating = null);
-                        Navigator.pop(ctx);
-                      },
-                      child: const Text('Clear rating'),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (ctx) => RatingPickerSheet(initialRating: _rating),
     );
+
+    if (result != null && mounted) {
+      setState(() {
+        _rating = result == -1 ? null : result;
+      });
+    }
   }
 
+  // Build Entry Form UI
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme;
-
     return Column(
       children: [
-        // Top bar
-        Container(
-          decoration: BoxDecoration(
-            color: color.surfaceContainer,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
-                tooltip: widget.readOnly ? 'Close' : 'Discard',
-              ),
-              const Spacer(),
-              if (!widget.readOnly)
-                FilledButton.tonalIcon(
-                  onPressed: _save,
-                  icon: const Icon(Icons.check, size: 18),
-                  label: const Text('Save'),
-                ),
-            ],
-          ),
+        // Top Bar for Entry Form
+        EntryTopBar(
+          readOnly: widget.readOnly,
+          onBack: () => Navigator.pop(context),
+          onSave: _save,
         ),
 
-        // Content area — note field fills remaining height and scrolls internally
-        Expanded(
-          child: GestureDetector(
-            onTap: () => _noteFocus.requestFocus(),
-            behavior: HitTestBehavior.translucent,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _titleCtrl,
-                    readOnly: widget.readOnly,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Title',
-                      hintStyle: TextStyle(
-                        color: color.onSurfaceVariant.withValues(alpha: 0.65),
-                      ),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _noteCtrl,
-                      focusNode: _noteFocus,
-                      readOnly: widget.readOnly,
-                      expands: true,
-                      minLines: null,
-                      maxLines: null,
-                      textAlignVertical: TextAlignVertical.top,
-                      keyboardType: TextInputType.multiline,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      decoration: InputDecoration(
-                        hintText: 'Note',
-                        hintStyle: TextStyle(
-                          color: color.onSurfaceVariant.withValues(alpha: 0.65),
-                        ),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        // Content Area for Entry Form
+        EntryContentArea(
+          titleCtrl: _titleCtrl,
+          noteCtrl: _noteCtrl,
+          noteFocus: _noteFocus,
+          readOnly: widget.readOnly,
         ),
 
-        // Bottom toolbar — enlarged and pinned to bottom
-        Container(
-          decoration: BoxDecoration(
-            color: color.surfaceContainer,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 6,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 14, 48, 14),
-                  child: Row(
-                    children: [
-                      // Date
-                      InkWell(
-                        onTap: widget.readOnly ? null : _pickDate,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.calendar_today_outlined,
-                                size: 18,
-                                color: color.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                DayKey.ofShort(_date),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: color.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Mood
-                      InkWell(
-                        onTap: widget.readOnly ? null : _showMoodPicker,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          child: Text(
-                            _adjective ?? '😊 Mood',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: _adjective != null
-                                  ? color.onSurface
-                                  : color.onSurfaceVariant,
-                              fontWeight: _adjective != null
-                                  ? FontWeight.w500
-                                  : FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Rating stars
-                      InkWell(
-                        onTap: widget.readOnly ? null : _showRatingPicker,
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: List.generate(5, (i) {
-                              final filled = (_rating ?? 0) >= i + 1;
-                              return Icon(
-                                filled
-                                    ? Icons.star_rounded
-                                    : Icons.star_outline_rounded,
-                                size: 22,
-                                color: filled ? Colors.amber : color.outlineVariant,
-                              );
-                            }),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.initial != null && !widget.readOnly)
-                  Positioned(
-                    right: 8,
-                    top: 0,
-                    bottom: 0,
-                    child: Center(
-                      child: PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert),
-                        tooltip: 'More options',
-                        onSelected: (value) {
-                          if (value == 'delete') {
-                            _confirmDelete();
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Delete', style: TextStyle(color: Colors.red)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        // Bottom Toolbar for Entry Form
+        EntryBottomToolbar(
+          date: _date,
+          adjective: _adjective,
+          rating: _rating,
+          readOnly: widget.readOnly,
+          showDeleteOption: widget.initial != null,
+          updatedAt: widget.initial?.updatedAt,
+          onPickDate: _pickDate,
+          onShowMoodPicker: _showMoodPicker,
+          onShowRatingPicker: _showRatingPicker,
+          onDelete: _confirmDelete,
         ),
       ],
     );
