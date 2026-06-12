@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dailylogr/providers/journal_provider.dart';
-import 'package:dailylogr/services/hive_service.dart';
 import 'package:dailylogr/utils/date_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

@@ -410,9 +410,23 @@ class _JournalCard extends StatelessWidget {
                       children: [
                         if (entry.adjective != null &&
                             entry.adjective!.trim().isNotEmpty)
-                          _chip(context, entry.adjective!, isToday),
+                          _chip(
+                            context,
+                            Text(
+                              entry.adjective!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: isToday ? color.primary : color.onSurfaceVariant,
+                              ),
+                            ),
+                            isToday,
+                          ),
                         if (entry.rating != null)
-                          _chip(context, _ratingStars(entry.rating!), isToday),
+                          _chip(
+                            context,
+                            _ratingStarsWidget(context, entry.rating!, isToday),
+                            isToday,
+                          ),
                       ],
                     ),
                   ],
@@ -425,12 +439,30 @@ class _JournalCard extends StatelessWidget {
     );
   }
 
-  String _ratingStars(int rating) {
+  Widget _ratingStarsWidget(BuildContext context, int rating, bool highlight) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme;
     final normalizedRating = rating.clamp(0, 5);
-    return '${'★' * normalizedRating}${'☆' * (5 - normalizedRating)}';
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final isFilled = index < normalizedRating;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 0.5),
+          child: Icon(
+            isFilled ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: 16,
+            color: isFilled 
+                ? Colors.amber.shade600 
+                : (highlight ? color.primary.withValues(alpha: 0.3) : color.onSurfaceVariant.withValues(alpha: 0.3)),
+          ),
+        );
+      }),
+    );
   }
 
-  Widget _chip(BuildContext context, String label, bool highlight) {
+  Widget _chip(BuildContext context, Widget child, bool highlight) {
     final color = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -440,13 +472,7 @@ class _JournalCard extends StatelessWidget {
             : color.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: highlight ? color.primary : color.onSurfaceVariant,
-        ),
-      ),
+      child: child,
     );
   }
 }

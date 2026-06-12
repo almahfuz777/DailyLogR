@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/journal_entry.dart';
 import '../../utils/date_helper.dart';
 
-class ActivityHeatmap extends StatelessWidget {
+class ActivityHeatmap extends StatefulWidget {
   final List<JournalEntry> entries;
 
   const ActivityHeatmap({
@@ -13,15 +13,45 @@ class ActivityHeatmap extends StatelessWidget {
   });
 
   @override
+  State<ActivityHeatmap> createState() => _ActivityHeatmapState();
+}
+
+class _ActivityHeatmapState extends State<ActivityHeatmap> {
+  late DateTime _currentMonth;
+  late final DateTime _today;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _today = DateTime(now.year, now.month, now.day);
+    _currentMonth = DateTime(now.year, now.month, 1);
+  }
+
+  void _goToPreviousMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+    });
+  }
+
+  void _goToNextMonth() {
+    setState(() {
+      _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+    });
+  }
+
+  bool get _canGoToNextMonth {
+    return _currentMonth.isBefore(DateTime(_today.year, _today.month, 1));
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final now = DateTime.now();
-    
-    final entryDates = entries.map((e) => DayKey.normalize(e.date)).toSet();
+    final entryDates = widget.entries.map((e) => DayKey.normalize(e.date)).toSet();
     
     // Setup current month data
-    final firstDayOfMonth = DateTime(now.year, now.month, 1);
-    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    final firstDayOfMonth = _currentMonth;
+    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
     
     // weekday returns 1 for Monday, 7 for Sunday. 
     // We want Sunday = 0, Monday = 1, etc., so we do % 7.
@@ -48,12 +78,35 @@ class ActivityHeatmap extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                monthYearFormat.format(now),
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left, size: 20),
+                    onPressed: _goToPreviousMonth,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    monthYearFormat.format(_currentMonth),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right, size: 20),
+                    onPressed: _canGoToNextMonth ? _goToNextMonth : null,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 16,
+                  ),
+                ],
               ),
             ],
           ),
@@ -90,11 +143,11 @@ class ActivityHeatmap extends StatelessWidget {
               }
 
               final dayNumber = index - firstDayOffset + 1;
-              final date = DateTime(now.year, now.month, dayNumber);
+              final date = DateTime(_currentMonth.year, _currentMonth.month, dayNumber);
               final normalizedDate = DayKey.normalize(date);
               
               final hasEntry = entryDates.contains(normalizedDate);
-              final isToday = DayKey.normalize(now).isAtSameMomentAs(normalizedDate);
+              final isToday = DayKey.normalize(_today).isAtSameMomentAs(normalizedDate);
 
               return Tooltip(
                 message: DateFormat('MMM d, yyyy').format(date),
