@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">#FFFFFF</color>
+    <color name="widget_bg_prompt">#E3F2FD</color>
+    <color name="widget_primary">#1E88E5</color>
+    <color name="widget_on_primary">#FFFFFF</color>
+    <color name="widget_text_title">#0D47A1</color>
+    <color name="widget_text_body">#263238</color>
+    <color name="widget_text_secondary">#546E7A</color>
+    <color name="streak_fire">#FF6D00</color>
+    <color name="chip_bg">#ECEFF1</color>
+    <color name="white">#FFFFFF</color>
+    <color name="transparent">#00000000</color>
+</resources>
