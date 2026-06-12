@@ -10,6 +10,7 @@ import 'package:dailylogr/providers/user_config_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dailylogr/services/backup_service.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -473,6 +474,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   )
                 : const Icon(Icons.chevron_right),
             onTap: hasGoogleProvider || _isLinkingGoogle ? null : _linkGoogleAccount,
+          ),
+
+          const Divider(),
+
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Backup & Restore',
+              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+            ),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.file_download_outlined),
+            title: const Text('Export Backup'),
+            subtitle: const Text('Save your entries data to a local JSON file.'),
+            onTap: () => BackupService.exportBackup(context),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.file_upload_outlined),
+            title: const Text('Import Data'),
+            subtitle: const Text('Restore entries data from existing JSON backup file.'),
+            onTap: () => BackupService.importBackup(context, ref),
           ),
 
           const Divider(),
