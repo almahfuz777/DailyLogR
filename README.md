@@ -163,24 +163,25 @@ dart run build_runner build --delete-conflicting-outputs
 - [x] Analytics screen (rating trend, mood distribution, activity heatmap)
 - [x] Settings: notifications toggle, password management, Google account linking
 - [x] Daily reminder notifications + closing-window urgency alerts
-- [ ] Export / backup system (PDF, CSV, JSON)
-- [ ] Import restore system
+- [x] Search entries
+- [x] Custom moods / mood icons
+- [x] Text formatting (numbered list and bulleted list)
+- [x] Selectable background color for entry card
+- [x] Undo / Redo support
+- [x] Auto-save draft system
 - [ ] Themes & personalization (dark mode, accent colors)
-- [ ] Search entries
-- [ ] Custom moods / mood icons
-- [ ] Rich text formatting (bold, bullets, quotes, checklists)
+- [x] Export / backup system (PDF, CSV, JSON)
+- [x] Import restore system
+- [ ] “On This Day” memory recaps
+- [x] Home Screen Widget support
 - [ ] Photo attachments in entries
 - [ ] Drawing / sketch canvas support
 - [ ] Voice notes/ Audio transcription
 - [ ] Smart writing prompts
-- [ ] Auto-save draft system
-- [ ] Undo / Redo support
 - [ ] AI mood detection from entries
 - [ ] AI-generated journal insights
-- [ ] “On This Day” memory recaps
 - [ ] Streak milestone celebrations
 - [ ] Shared journals / collaboration mode
-- [ ] Widget support
 - [ ] iOS full support & App Store release
 ---
 
