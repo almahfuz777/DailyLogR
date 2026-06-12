@@ -289,6 +289,7 @@ class _MoodPickerSheetState extends ConsumerState<MoodPickerSheet> {
                               if (action == 'edit') {
                                 await _showAddMoodDialog(existingMood: adj);
                               } else if (action == 'delete') {
+                                if (!ctx.mounted) return;
                                 final confirm = await showDialog<bool>(
                                   context: ctx,
                                   builder: (dCtx) => AlertDialog(
@@ -311,6 +312,7 @@ class _MoodPickerSheetState extends ConsumerState<MoodPickerSheet> {
                                   ),
                                 );
                                 if (confirm == true) {
+                                  if (!mounted) return;
                                   await ref
                                       .read(userConfigProvider.notifier)
                                       .removeCustomMood(adj);

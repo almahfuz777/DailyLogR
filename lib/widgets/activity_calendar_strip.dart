@@ -132,7 +132,7 @@ class _ActivityCalendarStripState extends State<ActivityCalendarStrip> {
               scrollDirection: Axis.horizontal,
               reverse: true,
               itemCount: _dates.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (context, index) =>
                   const SizedBox(width: _boxSpacing),
               itemBuilder: (context, index) {
                 final date = _dates[index];

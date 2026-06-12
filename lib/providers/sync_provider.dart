@@ -17,9 +17,9 @@ class SyncStatusNotifier extends Notifier<SyncStatus> with WidgetsBindingObserve
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     // Sync on resume covers the multi-device case: if another device made changes while this app was backgrounded, they appear as soon as the user returns.
-    if (lifecycle == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed) {
       _performAutoSync();
     }
   }

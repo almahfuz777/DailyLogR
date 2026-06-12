@@ -390,13 +390,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     
                     // Re-sync with actual state (in case permission was denied)
                     final actuallyEnabled = await NotificationService().isDailyRemindersEnabled();
-                    if (mounted && actuallyEnabled != _isNotificationsEnabled) {
+                    if (!mounted) return;
+                    if (actuallyEnabled != _isNotificationsEnabled) {
                       setState(() {
                         _isNotificationsEnabled = actuallyEnabled;
                       });
                       
                       // If user tried to enable it, but it failed (likely permanently denied by OS)
                       if (value == true && actuallyEnabled == false) {
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: const Text('Notifications are blocked in device settings.'),
